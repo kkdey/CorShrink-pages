@@ -1,0 +1,13 @@
+.nav {
+	height: 50vh;
+	margin:0 auto;
+    left: 0%;
+    position: relative;
+    text-align:center
+    transform: translateX(-50%);
+    background : linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), url(start.gif);
+   /* probably not needed anymore, but doesn't hurt */
+/*   -o-object-fit: contain;
+   object-fit: contain; */
+}
+

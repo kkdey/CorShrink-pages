@@ -1,0 +1,122 @@
+---
+title: "Softimpute vs CorShrink"
+author: "Kushal K Dey"
+date: "2/23/2018"
+output: html_document
+---
+
+In this script, we compare the performance of CorShrink on missing data matrix with imputed data
+from different imputation methods.
+
+```{r}
+library(ggplot2)
+library(corrplot)
+library(gridExtra)
+library(flashr)
+library(softImpute)
+library(CorShrink)
+```
+
+```{r}
+name <- "ENSG00000166819"
+```
+
+```{r}
+impute_method <- "svd"
+```
+
+```{r}
+data("sample_by_feature_data")
+```
+
+```{r}
+matc=biScale(sample_by_feature_data,col.scale=FALSE,row.scale=FALSE,trace=TRUE)
+fits3=softImpute(matc,rank.max=50,lambda=1,type=impute_method)
+fitted_mat <- complete(sample_by_feature_data,fits3,unscale=TRUE)
+```
+
+```{r}
+cor_mat <- cor(fitted_mat)
+```
+
+```{r}
+data("pairwise_corr_matrix")
+```
+
+```{r}
+corshrink_mat <- CorShrinkData(sample_by_feature_data, image = "null",
+                               ash.control = list(mixcompdist = "halfuniform",
+                                                  control= list(maxiter=1000)))
+```
+
+```{r}
+gene_names <- as.character(read.table(file = "../shared_output/GTEX_V6/gene_names_GTEX_V6.txt")[,1])
+gene_names_1 <- as.character(sapply(gene_names, function(x) return(strsplit(x, "[.]")[[1]][1])))
+ 
+person_label=read.table("../shared_output/GTEX_V6/person_identifier_labels_with_numbers.txt");
+samples_id <- read.table(file = "../shared_output/GTEX_V6/samples_id.txt")[,1]
+
+samples_person <- sapply(samples_id, function(x) return(paste0(strsplit(as.character(x), "-")[[1]][1:2], collapse ="-")))
+tissue_labels <- read.table(file = "../shared_output/GTEX_V6/samples_id.txt")[,3]
+
+unique_persons <- unique(samples_person)
+unique_tissues <- unique(tissue_labels)
+```
+
+
+```{r echo=FALSE, eval=TRUE}
+order_index <- c();
+U <- unique_tissues
+order_index <- get(load("../shared_output/order_index.rda"))
+```
+
+```{r fig.height=12, fig.width=12}
+flash_out <- get(load("../shared_output/flash_output.rda"))
+yfill = flash_fill(sample_by_feature_data,flash_out)
+yfill.cor = cor(yfill)
+col2 <- c("blue", "white", "red")
+corrplot::corrplot(yfill.cor[order_index, order_index],
+                   diag = FALSE,
+                   col = colorRampPalette(col2)(200),
+                   tl.pos = "td", tl.cex = 0.7, tl.col = "black",
+                   rect.col = "white",na.label.col = "white",
+                   method = "color", type = "upper")
+
+new_data <- flash_out$EL %*% t(flash_out$EF)
+cor_new_data <- cor(new_data)
+rownames(cor_new_data) <- colnames(sample_by_feature_data)
+colnames(cor_new_data) <- colnames(sample_by_feature_data)
+
+```
+
+```{r, fig.height=15, fig.width=15}
+
+par(mfrow=c(2,2))
+
+corrplot(as.matrix(pairwise_corr_matrix)[order_index, order_index], 
+               diag = FALSE,
+               col = colorRampPalette(col2)(200),
+               tl.pos = "td", tl.cex = 0.7, tl.col = "black",
+               rect.col = "white",na.label.col = "white",
+               method = "color", type = "upper")
+corrplot(as.matrix(corshrink_mat$cor)[order_index, order_index], 
+               diag = FALSE,
+               col = colorRampPalette(col2)(200),
+               tl.pos = "td", tl.cex = 0.7, tl.col = "black",
+               rect.col = "white",na.label.col = "white",
+               method = "color", type = "upper")
+corrplot(as.matrix(cor_mat)[order_index, order_index], 
+               diag = FALSE,
+               col = colorRampPalette(col2)(200),
+               tl.pos = "td", tl.cex = 0.7, tl.col = "black",
+               rect.col = "white",na.label.col = "white",
+               method = "color", type = "upper")
+corrplot(as.matrix(cor_new_data)[order_index, order_index], 
+               diag = FALSE,
+               col = colorRampPalette(col2)(200),
+               tl.pos = "td", tl.cex = 0.7, tl.col = "black",
+               rect.col = "white",na.label.col = "white",
+               method = "color", type = "upper")
+
+```
+

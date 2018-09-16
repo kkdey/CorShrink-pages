@@ -1,0 +1,20 @@
+---
+title: "ecostructure_pcorshrink_isee"
+author: "Kushal K Dey"
+date: "June 29, 2018"
+output: html_document
+---
+
+In this script, we apply pCorShrink and ISEE for the ecological species abundance data of birds in the Himalayas.
+
+```{r}
+library(corpcor)
+library(CorShrink)
+library(network)
+source("isee_all.R")
+library(scales)
+library(statnet)
+library(corrplot)
+library(ecostructure)
+```
+

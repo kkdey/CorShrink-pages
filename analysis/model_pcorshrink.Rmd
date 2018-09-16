@@ -1,0 +1,142 @@
+---
+title: "How pCorShrink works."
+author: "Kushal K Dey"
+date: "6/27/2018"
+output: html_document
+---
+
+## Introduction
+
+In this script, we present the modeling framework for the *pCorShrinkData* function of 
+the **CorShrink** package. *pCorShrink* extends the adaptive correlation shrinkage
+approach of **CorShrink** package to shrinking partial correlations and hence 
+faciliatating sparse graphical model representation of the variable associations.
+
+The central theme of the *pCorShrinkData* function is derived from the innovated
+scalable efficient estimation (ISEE) algorithm by [Fan and Lv, 2016](https://projecteuclid.org/euclid.aos/1473685270). We integrate a slightly 
+modified version of the ISEE approach with the adaptive shrinkage
+formulation of *CorShrink* or *ashr*.
+
+## Model
+
+Assume 
+
+$$ X_{n.} = \left( X_{n1}, X_{n2}, \cdots, X_{nP} \right ) \sim N \left (\mu_P, \Sigma_{P \times P} \right ) $$
+
+for each $n=1,2,\cdots, N$, where $N$ is the number of samples and $P$ is the number of features/variables.
+For simplicity, we assume that $\mu_{P} = 0$. Assume that $\Omega = \Sigma^{-1}$. The partial correlation matrix $R = ((R_{ij}))$ is derived from $\Omega$ by the following relation.
+
+$$ R_{ij} = -\frac{\Omega_{ij}}{\sqrt{\Omega_{ii} \Omega_{jj}}} $$
+
+Now we know that 
+
+$$ \tilde{X}_{n.} = \Omega X_{n.} \sim N(0, \Omega \Sigma \Omega = \Omega) $$
+
+So, in a way, if we knew $\tilde{X}_{n.}$, we could just use **CorShrinkData** on 
+these variables and that would have provided an estimator of $\Omega$. 
+
+For any submatrix $A$ of the set of variables $\left\{1, 2, \cdots, P \right \}$,
+we can write 
+
+$$ \tilde{X}_{A} = (X \Omega)_{A} = X_{A} \Omega_{A,A} + X_{A^{c}} \Omega_{A^{c},A}  = (X_{A} + X_{A^{c}}\Omega_{A^{c}A} \Omega^{-1}_{A,A}) \Omega_{A,A} = E_{A} \Omega_{AA}$$
+
+where we define 
+
+$$ E_{A} = (X_{A} + X_{A^{c}}\Omega_{A^{c}A} \Omega^{-1}_{A,A}) $$
+
+We show that the $E_{A}$ values can be viewed as residuals from regression $X_{A}$ over $X_{A^{c}}$.
+
+Now note that in a Gaussian graphical model, we have for each $n$.
+
+$$ x_{nA} \; | \;  x_{nA^{c}}  \sim N \left ( - \Omega^{-1}_{A,A} \Omega_{A, A^{c}} x_{nA^{c}}, \Omega^{-1}_{A,A} \right)  $$
+
+So, if we regress $x_{nA}$ against $x_{nA^{c}}$, then we have
+
+$$ x_{nA} = B_{A} x_{nA^{c}} + \epsilon_{nA} $$
+
+where $B$ is the matrix of coefficients from this linear regression model fit. This regression is same as
+taking each column $X_{j}$ from the subset $j \in A$ and run a separate regression with the predictors coming from the columns of $X$ matrix that are not in subset $A$. The errors derived from the regression model fit are given by 
+
+$$ E_{A} = X_{A} - X_{A^{c}} B^{T} = X_{A} + X_{A^{c}}\Omega_{A^{c}A} \Omega^{-1}_{A,A} $$
+
+and their estimates $\hat{E}_{A}$ are obtained from regressing $X_{A}$ on $X_{A^{c}}$.
+
+$$ \hat{E}_{A} = X_{A} - X_{A^{c}}(\hat{B}^{OLS}_{A})^{T} $$
+
+Also, the error sum of squares is an unbiased estimator of $\Omega^{-1}_{A,A}$. So, an estimator of
+$\Omega_{A,A}$ can be obtained as follows 
+
+$$ \hat{\Omega}_{A,A} = \left(\frac{1}{n} \hat{E}^{T}_{A} \hat{E}_{A} \right)^{-1} $$
+
+Therefore, our estimate of $\tilde{X}$ can be written as 
+
+$$ \hat{\tilde{X}}_{A} = \hat{E}_{A} \hat{\Omega}_{A,A} $$
+
+In the ISEE paper, the authors take the index sets $A$ to be paired blocks, $A_1 = (1,2)$, $A_2 = (3,4)$,
+$\cdots$ , and then compute  $\hat{\tilde{X}}_{A_1}, \hat{\tilde{X}}_{A_2}, \cdots$ and then aggregate
+them to get the overall $\hat{\tilde{X}}$.
+
+
+## Adjustments 
+
+### ISEE  method 
+
+In the original ISEE paper, the shrinkage is performed in 2 steps - first instead of computing the OLS estimator $\hat{B}^{OLS}_{A}$ in the regression of $X_A$ onto $X_{A^{c}}$, they perform a scaled LASSO regression (See Equation 12 of their paper).
+
+The second shrinkage step occurs after getting the estimator of $\Omega$ as follows
+
+$$ \hat{\Omega}_{ISEE,a} = \frac{1}{n} \hat{\tilde{X}}^{T} \hat{\tilde{X}} $$
+
+Then for a fixed threshold $\tau$ which is chosen empirically, the entries of the $\hat{\Omega}_{ISEE,a}$ are
+thresholded. 
+
+
+### pCorShrink + OLS
+
+In the default version of **pCorShrink**, we do not perform any other shrinkage at any steps 
+apart from the *CorShrink* shrinkage on the generated $\hat{\tilde{X}}^{T}$ values. 
+
+Once $\hat{\tilde{X}}$ are obtained, we run **CorShrinkData** on these modified data and perform
+adaptive shrinkage on the correlation matrix $R^{cor}$ of $\hat{\tilde{X}}$, which is effectively the correlation matrix of the $\Omega$ matrix.
+
+$$ R^{cor}_{ij} = \frac{\Omega_{ij}}{\sqrt{\Omega_{ii} \Omega_{jj}}} $$
+
+The actual $R$ - the partial correlation matrix - is simply the negative of this correlation matrix in the 
+off-diagonal entries with $1$ on the diagonals. 
+
+
+### pCorShrink + glmnet
+
+However, when the number of samples is smaller than the number of variables in the predictor set $A^{c}$, 
+which, since our (as well as ISEE paper's) $A$ is of cardinality $2$, is same as saying if $N < P-2$, then 
+the regression model by OLS method fails to give an unique solution, as the model matrix is no longer of full column rank.
+
+In this case, we propose to use a cross-validated Elastic net shrinkage (*cv.glmnet* in the **glmnet** package) with tuning parameter $\alpha$ chosen between $0$ and $1$, where $0$ corresponds to ridge regression and $1$ corresponds to LASSO. From practical examples, I have not seen much difference between the LASSO and the scaled LASSO approach of the ISEE paper. However, the main reason we do not use the scaled LASSO is because the code is not available and the compiled code does not run on Mac machines. Also, the LASSO and Ridge regression penalties are more common for regression modeling.
+
+The rest of the steps are same as the *pCorShrink + OLS* approach.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

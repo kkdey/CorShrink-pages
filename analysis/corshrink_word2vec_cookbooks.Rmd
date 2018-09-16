@@ -1,0 +1,123 @@
+---
+title: "corshrink word2vec cookbooks"
+author: "Kushal K Dey"
+date: "3/31/2018"
+output: html_document
+---
+
+
+We load the cosine similarities on the original cookbooks, along with bootstrap samples.
+
+```{r}
+dat <- get(load("../output/correlation_results_original_fake.rda"))
+```
+
+```{r}
+original_cors <- dat$original[lower.tri(dat$original)]
+original_z <- 0.5 * log((1+original_cors)/(1-original_cors))
+
+fake_z_mat <- matrix(0,100,length(original_z))
+for(m in 1:100){
+  tmp <- dat$fake[[m]][lower.tri(dat$fake[[m]])]
+  fake_z_mat[m,] <- 0.5 * log((1+tmp)/(1-tmp))
+}
+
+sd_fake_z_mat <- apply(fake_z_mat, 2, sd)
+
+library(ashr)
+
+out <- ash(original_z, sd_fake_z_mat, mixcompdist = "normal")
+
+ash_out <- (exp(2*out$result$PosteriorMean) - 1)/(exp(2*out$result$PosteriorMean) + 1)
+
+corshrink_mat <- matrix(0, dim(dat$original)[1], dim(dat$original)[2])
+corshrink_mat[lower.tri(corshrink_mat)] <- ash_out
+corshrink_mat_2 <- corshrink_mat + t(corshrink_mat)  + diag(1, dim(dat$original)[1])
+
+rownames(corshrink_mat_2) <- rownames(dat$original)
+colnames(corshrink_mat_2) <- rownames(dat$original)
+
+```
+
+```{r}
+library(ggplot2)
+df <- data.frame("true_corr" = dat$original[lower.tri(dat$original)],
+                 "corshrink" = corshrink_mat_2[lower.tri(corshrink_mat_2)])
+p <- ggplot(df, aes(true_corr, corshrink))
+p + geom_point()
+```
+
+```{r}
+word_pairs <- combn(rownames(dat$original), 2)
+```
+
+```{r}
+idx1 <- which(word_pairs[1,] == "granola")
+idx2 <- which(word_pairs[2,] == "granola")
+idx <- c(idx1, idx2)
+```
+
+
+```{r}
+color_ids <- rep(1, length(df$true_corr))
+color_ids[idx] <- 2
+df2 <- data.frame("true_corr" = df$true_corr,
+                 "corshrink" = df$corshrink,
+                 "color_idx" = color_ids)
+colfunc <- colorRampPalette(c("floralwhite", "darkviolet"))
+plot(df2$true_corr, df2$corshrink, bg = 2, col = c("black", "red")[df2$color_idx], pch = 19, cex = 1, xlab = "cosine similarity", ylab = "corshrink similarity")
+abline(0,1)
+
+```
+
+```{r}
+sort(corshrink_mat_2["crisps",], decreasing = T)[1:20]
+sort(dat$original["crisps",], decreasing = T)[1:20]
+
+sort(corshrink_mat_2["lentil",], decreasing = T)[1:20]
+sort(dat$original["lentil",], decreasing = T)[1:20]
+
+sort(corshrink_mat_2["pollock",], decreasing = T)[1:20]
+sort(corshrink_mat_2["haddock",], decreasing = T)[1:20]
+sort(dat$original["haddock",], decreasing = T)[1:20]
+
+```
+
+We color the points based on how often at least one of the words occurs in the pair.
+
+```{r}
+library(wordVectors)
+dir <- "../data/cookbooks/"
+out <- prep_word2vec(origin = dir, destination = "../data/cookbooks_pooled.txt", lowercase = T)
+```
+
+```{r}
+sentences<-scan("../data/cookbooks_pooled.txt","character",sep="\n");
+sentences<-gsub("\\.","",sentences)
+  #Split sentence
+words<-strsplit(sentences," ")
+  #Calculate word frequencies
+words.freq<-table(unlist(words));
+```
+
+```{r}
+indices <- match(rownames(dat$original), names(words.freq))
+words.freq.foods <- words.freq[indices]
+```
+
+```{r}
+num_occurrence_matrix <- sapply(words.freq.foods, function(l) pmin(l, words.freq.foods))
+nsamp_vec <- num_occurrence_matrix[lower.tri(num_occurrence_matrix)]
+```
+
+```{r}
+df3 <- data.frame("true_corr" = df$true_corr,
+                 "corshrink" = df$corshrink,
+                 "nsamp" = nsamp_vec)
+colfunc <- colorRampPalette(c("lightcyan", "darkcyan"))
+plot(df3$true_corr, df3$corshrink, bg = 2, col = colfunc(2000)[df3$nsamp], pch = 19, cex = 1, xlab = "cosine similarity", ylab = "corshrink similarity")
+abline(0,1)
+
+```
+
+

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Kushal K Dey" />
+
+
+<title>Hub networks - CorShrink, corpcor and GLASSO</title>
+
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+<link rel="stylesheet" href="cosmo.css" type="text/css" />
+
+</head>
+
+<body>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:100,300,400,600" rel="stylesheet" type="text/css">
+    <link href="../docs/cosmo.css" rel="stylesheet">
+    <link href="../docs/cosmo.min.css" rel="stylesheet">
+</head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="../docs/bootstrap/js/bootstrap.min.js"></script>
+
+<body>
+
+<div class = "nav" align = "middle">
+<div class= "p1"></div>
+<p>
+  <a class="btn btn-large btn btn-primary" type="button" href = "index.html">CorShrink</a>
+  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow.html">HOME</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow_project.html">WORKFLOW</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "about.html">METHODS</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink">SOFTWARE</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "license.html">LICENSE</a>
+   &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink-pages">GITHUB</a>
+ </p>
+</div>
+<!-- <div class="nav">
+  <a href="index.html">Home page</a> &nbsp &nbsp
+  <a href="musings.html">Musings</a> &nbsp &nbsp
+  <a href="town.html">My town</a> &nbsp &nbsp
+  <a href="links.html">Links</a>
+</div> -->
+
+<!-- Main content -->
+</body>
+</html>
+
+
+<h1 class="title toc-ignore">Hub networks - CorShrink, corpcor and GLASSO</h1>
+<h4 class="author"><em>Kushal K Dey</em></h4>
+<h4 class="date"><em>12/6/2017</em></h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#covariance-hub">Covariance Hub</a><ul>
+<li><a href="#sample-correlation">sample correlation</a></li>
+<li><a href="#corpcor">corpcor</a></li>
+<li><a href="#corshrink">CorShrink</a></li>
+<li><a href="#glasso">glasso</a></li>
+</ul></li>
+<li><a href="#inverse-covariance-hub">Inverse Covariance Hub</a><ul>
+<li><a href="#sample-correlation-matrix">sample correlation matrix</a></li>
+<li><a href="#corpcor-1">corpcor</a></li>
+<li><a href="#corshrink-1">CorShrink</a></li>
+<li><a href="#glasso-1">glasso</a></li>
+</ul></li>
+<li><a href="#binary-hub">Binary Hub</a></li>
+</ul>
+</div>
+
+<pre class="r"><code>library(CorShrink)</code></pre>
+<pre><code>## Warning: package &#39;CorShrink&#39; was built under R version 3.4.3</code></pre>
+<pre class="r"><code>library(hglasso)</code></pre>
+<pre><code>## Loading required package: glasso</code></pre>
+<pre><code>## Loading required package: mvtnorm</code></pre>
+<pre><code>## Loading required package: igraph</code></pre>
+<pre><code>## 
+## Attaching package: &#39;igraph&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:stats&#39;:
+## 
+##     decompose, spectrum</code></pre>
+<pre><code>## The following object is masked from &#39;package:base&#39;:
+## 
+##     union</code></pre>
+<pre class="r"><code>library(corpcor)
+library(glasso)</code></pre>
+<div id="covariance-hub" class="section level2">
+<h2>Covariance Hub</h2>
+<p>We now generate sparse covariance matrix using the <code>hglasso</code> package and then generate data from a normal distribution with that covariance matrix parameter, and then apply covariance or correlation estimation methods such as <code>corpcor</code>, <code>CorShrink</code> and <code>GLASSO</code>.</p>
+<pre class="r"><code>hubnet &lt;- HubNetwork(100,0.95,10,0.1, type = &quot;covariance&quot;)$Theta</code></pre>
+<p>Image of the correlation matrix</p>
+<pre class="r"><code>col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+image(hubnet,
+      col=col, main=paste0(&quot;cor mat - sparse&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="hubnet_corshrink_compare_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>Now we generate a data matrix under the above model.</p>
+<pre class="r"><code>data &lt;- MASS::mvrnorm(50, rep(0, 100), hubnet)</code></pre>
+<div id="sample-correlation" class="section level3">
+<h3>sample correlation</h3>
+<pre class="r"><code>image(as.matrix(cor(data)),
+      col=col, main=paste0(&quot;sample corr.&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="hubnet_corshrink_compare_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+</div>
+<div id="corpcor" class="section level3">
+<h3>corpcor</h3>
+<pre class="r"><code>strimmer_sample &lt;- corpcor::cor.shrink(data)</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.8755</code></pre>
+<pre class="r"><code>image(strimmer_sample,
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="hubnet_corshrink_compare_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+</div>
+<div id="corshrink" class="section level3">
+<h3>CorShrink</h3>
+<pre class="r"><code>cov_sample_ML &lt;-  CorShrinkData(data, sd_boot = FALSE, optmethod = &quot;mixEM&quot;,
+                     image.control = list(x.cex = 0.3, y.cex = 0.3))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre class="r"><code>par(mfrow = c(1, 2))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;CorShrink (non PD) &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;CorShrink (PD) &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="hubnet_corshrink_compare_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+</div>
+<div id="glasso" class="section level3">
+<h3>glasso</h3>
+<pre class="r"><code>K &lt;- 20
+n &lt;- dim(data)[1]
+rho_array &lt;- c(0.005, 0.05, 0.1, 0.2, 0.5, 0.8, 1, 2, 5, 10, 100)
+covmat &lt;- cov(data)
+score&lt;- array(0, length(rho_array))
+for(num in 1:length(rho_array)){
+  temp &lt;- array(0, K)
+  for(k in 1:K){
+    cross_train &lt;- sample(1:n, round(0.2*n), replace = FALSE)
+    cross_test &lt;- setdiff(1:n, cross_train)
+    covmat_train &lt;- cov(data[cross_train,], use = &quot;pairwise.complete.obs&quot;)
+    covmat_test &lt;- cov(data[cross_test,], use = &quot;pairwise.complete.obs&quot;)
+    glasso_train &lt;- as.matrix(cov2cor(glasso::glasso(covmat_train, rho = rho_array[num])$w))
+    temp[k] &lt;- -log(det(glasso_train)) - psych::tr(covmat_test %*% solve(glasso_train))
+  }
+  cat(&quot;We are at num&quot;, num, &quot;\n&quot;)
+  score[num] &lt;- mean(temp)
+}</code></pre>
+<pre><code>## We are at num 1 
+## We are at num 2 
+## We are at num 3 
+## We are at num 4 
+## We are at num 5 
+## We are at num 6 
+## We are at num 7 
+## We are at num 8 
+## We are at num 9 
+## We are at num 10 
+## We are at num 11</code></pre>
+<pre class="r"><code>glasso_sample &lt;- glasso::glasso(cov(data), rho = rho_array[which.max(score)])
+image(as.matrix(cov2cor(glasso_sample$w)),
+      col=col, main=paste0(&quot;glasso&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="hubnet_corshrink_compare_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+</div>
+</div>
+<div id="inverse-covariance-hub" class="section level2">
+<h2>Inverse Covariance Hub</h2>
+<p>We now generate sparse inverse covariance matrix using the <code>hglasso</code> package and then generate data from a normal distribution with that inverse covariance matrix parameter, and then apply covariance or correlation estimation methods such as <code>corpcor</code>, <code>CorShrink</code> and <code>GLASSO</code>.</p>
+<pre class="r"><code>library(hglasso)
+ihubnet &lt;- HubNetwork(100,0.95,30,0.1)$Theta
+hubnet &lt;- solve(ihubnet)
+ihubnet2 &lt;- solve(cov2cor(hubnet))</code></pre>
+<p>Image of the correlation matrix and the</p>
+<pre class="r"><code>col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+par(mfrow = c(1,2))
+image(cov2cor(hubnet),
+      col=col, main=paste0(&quot;pop corr mat&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+image(ihubnet2,
+      col=col, main=paste0(&quot;pop inv corr mat&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="hubnet_corshrink_compare_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<p>Now we generate a data matrix under the above model.</p>
+<pre class="r"><code>data &lt;- MASS::mvrnorm(50, rep(0, 100), hubnet)</code></pre>
+<div id="sample-correlation-matrix" class="section level3">
+<h3>sample correlation matrix</h3>
+<pre class="r"><code>image(as.matrix(cor(data)),
+      col=col, main=paste0(&quot;sample corr.&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="hubnet_corshrink_compare_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+</div>
+<div id="corpcor-1" class="section level3">
+<h3>corpcor</h3>
+<pre class="r"><code>strimmer_sample &lt;- corpcor::cor.shrink(data)</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.4579</code></pre>
+<pre class="r"><code>par(mfrow = c(1, 2))
+image(cor(strimmer_sample),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+image(solve(cor(strimmer_sample)+0.001*diag(1,dim(strimmer_sample)[2])),
+      col=col, main=paste0(&quot;(inv) shafer strimmer&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="hubnet_corshrink_compare_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+</div>
+<div id="corshrink-1" class="section level3">
+<h3>CorShrink</h3>
+<pre class="r"><code>cov_sample_ML &lt;-  CorShrink::CorShrinkData(data, sd_boot = FALSE, optmethod = &quot;mixEM&quot;,
+                     ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 1))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre class="r"><code>par(mfrow = c(2, 2))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;CorShrink (ash cor)&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+image(solve(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;(inv) CorShrink (ash cor)&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+image(as.matrix(cov_sample_ML$ash_cor_PD),
+      col=col, main=paste0(&quot;CorShrink (ash cor PD)&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+image(solve(cov_sample_ML$ash_cor_PD),
+      col=col, main=paste0(&quot;(inv) CorShrink (ash cor PD)&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="hubnet_corshrink_compare_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
+<p>Note that in this case the results from CorShrink is not very stable, and also the matrix after PD adjustment is very different from the one before PD adjustment when viewed in terms of their inverse correlation estimates.</p>
+</div>
+<div id="glasso-1" class="section level3">
+<h3>glasso</h3>
+<p>We run GLASSO using cross-validation with different levels of intensities and then presenting the image results for the best fit.</p>
+<pre class="r"><code>K &lt;- 20
+n &lt;- dim(data)[1]
+rho_array &lt;- c(0.005, 0.01, 0.05, 0.1, 0.15,  0.2, 0.25, 0.3, 0.35, 0.4, 0.45,
+               0.5, 0.55, 0.6, 0.65, 0.70, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 
+               1.5, 2, 3, 4, 5, 7, 9, 10, 20, 50, 100)
+covmat &lt;- cov(data)
+score&lt;- array(0, length(rho_array))
+for(num in 1:length(rho_array)){
+  temp &lt;- array(0, K)
+  for(k in 1:K){
+    cross_train &lt;- sample(1:n, round(0.2*n), replace = FALSE)
+    cross_test &lt;- setdiff(1:n, cross_train)
+    covmat_train &lt;- cov(data[cross_train,], use = &quot;pairwise.complete.obs&quot;)
+    covmat_test &lt;- cov(data[cross_test,], use = &quot;pairwise.complete.obs&quot;)
+    glasso_train &lt;- as.matrix(cov2cor(glasso::glasso(covmat_train, rho = rho_array[num])$w))
+    temp[k] &lt;- -log(det(glasso_train)) - psych::tr(covmat_test %*% solve(glasso_train))
+  }
+  cat(&quot;We are at num&quot;, num, &quot;\n&quot;)
+  score[num] &lt;- mean(temp)
+}</code></pre>
+<pre><code>## We are at num 1 
+## We are at num 2 
+## We are at num 3 
+## We are at num 4 
+## We are at num 5 
+## We are at num 6 
+## We are at num 7 
+## We are at num 8 
+## We are at num 9 
+## We are at num 10 
+## We are at num 11 
+## We are at num 12 
+## We are at num 13 
+## We are at num 14 
+## We are at num 15 
+## We are at num 16 
+## We are at num 17 
+## We are at num 18 
+## We are at num 19 
+## We are at num 20 
+## We are at num 21 
+## We are at num 22 
+## We are at num 23 
+## We are at num 24 
+## We are at num 25 
+## We are at num 26 
+## We are at num 27 
+## We are at num 28 
+## We are at num 29 
+## We are at num 30 
+## We are at num 31 
+## We are at num 32 
+## We are at num 33</code></pre>
+<pre class="r"><code>glasso_sample &lt;- glasso::glasso(cov(data), rho = rho_array[which.max(score)])
+
+par(mfrow = c(1, 2))
+image(as.matrix(cov2cor(glasso_sample$w)),
+      col=col, main=paste0(&quot;glasso&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(as.matrix(cov2cor(glasso_sample$wi)),
+      col=col, main=paste0(&quot;glasso (inv)&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="hubnet_corshrink_compare_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
+</div>
+</div>
+<div id="binary-hub" class="section level2">
+<h2>Binary Hub</h2>
+<p>The last option is to use the <code>binary</code> option in type for generating HubNetwork. However, the matrix generated or its inverse are not positive definite and hence this option is ruled out from the analysis.</p>
+<pre class="r"><code>library(hglasso)
+ihubnet &lt;- HubNetwork(100,0.95,10,0.1, &quot;binary&quot;)$Theta
+hubnet &lt;- solve(ihubnet)</code></pre>
+<pre class="r"><code>col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+par(mfrow = c(1,2))
+image(hubnet,
+      col=col, main=paste0(&quot;cor mat - sparse&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+image(ihubnet,
+      col=col, main=paste0(&quot;cor mat - sparse&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="hubnet_corshrink_compare_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
+</div>
+
+<hr>
+<p>
+    This <a href="http://rmarkdown.rstudio.com">R Markdown</a> site was created with <a href="https://github.com/jdblischak/workflowr">workflowr</a>
+</p>
+<hr>
+
+<!-- To enable disqus, uncomment the section below and provide your disqus_shortname -->
+
+<!-- disqus
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'rmarkdown'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+-->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

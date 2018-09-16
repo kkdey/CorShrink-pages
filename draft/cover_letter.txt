@@ -1,0 +1,32 @@
+
+Dear Editor,
+
+Please consider our manuscript, “CorShrink : Empirical Bayes shrinkage estimation of correlations, with applications” for publication in Biostatistics.
+
+This article proposes a new and simple technique for adaptive shrinkage of correlations and correlation-like quantities. This method is an extension of the adaptive shrinkage method proposed in the paper “False discovery rates: a new deal” published in this journal by one of the authors, Matthew Stephens 
+(https://doi.org/10.1093/biostatistics/kxw041).
+
+There are many correlation shrinkage estimators in the statistical literature, but almost none of them can handle extensive missing data in the data matrix effectively. An example of such data with high missingness is observed in the gene expression data of post mortem donors across many tissues in the Genotype Tissue Expression Project. For each donor, data from only a handful of tissues are usually available, thereby leading to many missing values. We illustrate how our method CorShrink effectively accounts for this missingness and provides results that are visually less cluttered and biologically more interpretable. 
+
+We also perform simulation experiments to show that even without missing data, CorShrink estimates are more accurate than those of other correlation shrinkage methods when the true correlation matrix is sparse. CorShrink can also be used for other correlation-like measures like cosine similarities in word2vec model fits that measures word-word similarities in natural language processing.
+
+We believe this new correlation shrinkage method has potential for widespread use in biological data applications and beyond. Some possible areas of its applications could be in LD blocking or correlation blocking in DNA methylation data. Therefore, we believe it will be of considerable interest to the readers of Biostatistics. 
+
+We have made our method available through the R package CorShrink so that readers can use it easily.  
+
+Our work has not been previously published and is not under consideration at any other journal or conference.
+
+We thank you for your consideration.
+
+Sincerely,
+
+Kushal K Dey, PhD
+Department of Statistics
+University of Chicago
+
+Matthew Stephens, PhD
+Department of Statistics and Human Genetics
+University of Chicago
+
+
+

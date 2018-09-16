@@ -1,0 +1,175 @@
+---
+title: "ISEE vs standard vs pCorshrink for N < P settings"
+author: "Kushal K Dey"
+date: "June 28, 2018"
+output: html_document
+---
+
+
+```{r opts, echo=FALSE}
+knitr::opts_chunk$set(fig.path = "isee_pcorshrink_standard_n_less_p_settings/")
+```
+
+## Packages
+
+```{r warning=FALSE, message = FALSE}
+require(graphics)
+library(igraph)
+library(MASS) 
+library(Matrix)
+library(corpcor)
+library(corrplot)
+source("isee_all.R") ## ISEE codes
+library(CorShrink)
+library(gridExtra)
+library(ggplot2)
+library(scales)
+```
+
+## Banded precision matrix
+
+```{r}
+band.mat <- function(a, p, K=1, permu=c(1:p)){
+  ones = rep(1,p)
+  Omega0 = a*ones%*%t(ones)
+  diag(Omega0) = rep(1,p)
+  Omega = 1*band(Omega0,-K,K)
+  Sigma = qr.solve(Omega)
+  Sigma = Sigma*(abs(Sigma)>1e-4)
+  Sigma.half=chol(Sigma)
+  Sigma.half = Sigma.half*(abs(Sigma.half)>1e-4)
+  Sigma = Sigma[permu,permu]
+  Omega = Omega[permu,permu]
+  Sigma.half = Sigma.half[permu,permu]
+  obj = list(Sigma=Sigma, Omega = Omega, Sigma.half = Sigma.half)
+}
+
+make.data <- function(Sigma.half, n, p, seed){
+  set.seed(seed)  
+  
+  X = matrix(rnorm(n*p),n,p)%*%Sigma.half
+  return(X)
+}
+```
+
+## Simulations
+
+```{r}
+p = 100
+obj = band.mat(a=0.5, p, K = 1)
+Sig.half = obj$Sigma.half
+Ome.true = obj$Omega
+pcorSigma <- -as.matrix(cov2cor(obj$Omega))
+diag(pcorSigma) <- rep(1, dim(pcorSigma)[1])
+
+regfactor = "log"  # or "one", "sqrt"
+npermu = 1         # or >= 2
+sis.use = 0        # or 1, whether to use SIS for screening
+bia.cor = 0        # or 1, whether to apply bias correction for ISEE
+```
+
+## Original partial correlation matrix
+
+```{r}
+pcorSigma <- -as.matrix(cov2cor(obj$Omega))
+diag(pcorSigma) <- rep(1, dim(pcorSigma)[1])
+col2 <- c("blue", "white", "red")
+corrplot(pcorSigma, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+```
+
+## Original correlation matrix
+
+```{r}
+corSigma <- cov2cor(obj$Sigma)
+col2 <- c("blue", "white", "red")
+corrplot(corSigma, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+```
+
+##  Frobenius norm comparison 
+
+```{r warning=FALSE, message = FALSE, echo=TRUE, eval=FALSE}
+n_vec = c(30, 50, 75, 100)
+M = 10
+
+frob_empirical = matrix(0, length(n_vec), M)
+frob_isee = matrix(0, length(n_vec), M)
+frob_isee_X = matrix(0, length(n_vec), M)
+frob_pcorshrink_lasso = matrix(0, length(n_vec), M)
+
+for(n in 1:length(n_vec)){
+  for(m in 1:M){
+  
+  X.mat = make.data(Sig.half, n_vec[n], p, seed = m*100)
+  pcor1 <- -as.matrix(cov2cor(ginv(cov(X.mat))))
+  diag(pcor1) <- 1
+  
+  obj.n = isee(X.mat, regfactor, npermu, sis.use, bia.cor = 0) 
+  pcor2 <- -cov2cor(obj.n$Omega.isee)
+  diag(pcor2) <- 1
+  
+  X_tilde_out <- isee.X(X.mat, bia.cor = 0, reg.fac = 1, permu = 1:ncol(X.mat), 
+                      use_slasso = TRUE)
+  pcor3 <- -cor(X_tilde_out$X.tilde)
+  diag(pcor3) <- 1
+  
+  pcor4 <- pCorShrinkData(X.mat, reg_type = "glmnet",
+                          maxiter = 1000,
+                          ash.control = list(mixcompdist = "normal"))
+
+  
+  frob_empirical[n,m] <- mean(sqrt((as.matrix(pcor1) - as.matrix(pcorSigma))^2))
+  frob_isee[n,m] <- mean(sqrt((as.matrix(pcor2) - as.matrix(pcorSigma))^2))
+  frob_isee_X[n,m] <- mean(sqrt((as.matrix(pcor3) - as.matrix(pcorSigma))^2))
+  frob_pcorshrink_lasso[n,m] <- mean(sqrt((as.matrix(pcor4) - as.matrix(pcorSigma))^2))
+  }
+  cat("We are at n=", n_vec[n], "\n")
+}
+
+```
+
+```{r echo=TRUE, eval=FALSE}
+frobs_list <- list("empirical" = frob_empirical,
+                   "isee" = frob_isee,
+                   "isee_X" = frob_isee_X,
+                   "pcorshrink_lasso" = frob_pcorshrink_lasso)
+save(frobs_list, file = "frob_dist_n_less_p.rda")
+```
+
+```{r}
+frobs_list <- get(load("frob_dist_n_less_p.rda"))
+```
+
+## Comparison of estimated partial correlation matrices
+
+```{r}
+n_vec = c(30, 50, 75, 100)
+M = 10
+
+p_list <- list()
+for(n in 1:length(n_vec)){
+  df <- data.frame("method" = factor(c(rep("empirical", M), rep("isee", M), 
+                                     rep("isee_X", M), 
+                                     rep("pcorshrink_lasso", M)), 
+                              levels = c("empirical", "isee",
+                                        "isee_X",
+                                        "pcorshrink_lasso")),
+                 "distance" = log(c(frobs_list$empirical[n,],
+                                    frobs_list$isee[n,],
+                                    frobs_list$isee_X[n,],
+                                    frobs_list$pcorshrink_lasso[n,])))
+p <- ggplot(df, aes(method, distance, color = method)) + ylab("log(distance)")
+p_list[[n]] <- p + geom_boxplot() + theme_bw() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) + ggtitle(paste0("n = ", n_vec[n], " p = ", 100)) +scale_y_continuous(breaks= pretty_breaks())
+}
+
+```
+
+```{r fig.width = 10, fig.height = 8}
+grid.arrange(p_list[[1]], p_list[[2]], p_list[[3]], p_list[[4]], nrow = 2,  ncol=2, as.table=TRUE)
+```

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Kushal K Dey" />
+
+
+<title>Can we combine GLASSO and CorShrink?</title>
+
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+<link rel="stylesheet" href="cosmo.css" type="text/css" />
+
+</head>
+
+<body>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:100,300,400,600" rel="stylesheet" type="text/css">
+    <link href="../docs/cosmo.css" rel="stylesheet">
+    <link href="../docs/cosmo.min.css" rel="stylesheet">
+</head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="../docs/bootstrap/js/bootstrap.min.js"></script>
+
+<body>
+
+<div class = "nav" align = "middle">
+<div class= "p1"></div>
+<p>
+  <a class="btn btn-large btn btn-primary" type="button" href = "index.html">CorShrink</a>
+  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow.html">HOME</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow_project.html">WORKFLOW</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "about.html">METHODS</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink">SOFTWARE</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "license.html">LICENSE</a>
+   &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink-pages">GITHUB</a>
+ </p>
+</div>
+<!-- <div class="nav">
+  <a href="index.html">Home page</a> &nbsp &nbsp
+  <a href="musings.html">Musings</a> &nbsp &nbsp
+  <a href="town.html">My town</a> &nbsp &nbsp
+  <a href="links.html">Links</a>
+</div> -->
+
+<!-- Main content -->
+</body>
+</html>
+
+
+<h1 class="title toc-ignore">Can we combine GLASSO and CorShrink?</h1>
+<h4 class="author"><em>Kushal K Dey</em></h4>
+<h4 class="date"><em>5/23/2018</em></h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#intro">Intro</a></li>
+<li><a href="#model">Model</a><ul>
+<li><a href="#partial-correlation">partial correlation</a></li>
+<li><a href="#correlation">correlation</a></li>
+</ul></li>
+<li><a href="#function-for-combining-glasso-and-corshrink">Function for combining GLASSO and CorShrink</a></li>
+<li><a href="#example-simulation">Example Simulation</a></li>
+<li><a href="#run-glasso">Run GLASSO</a></li>
+<li><a href="#corshrink">CorShrink</a></li>
+<li><a href="#run-glasso-corshrink">Run GLASSO + CorShrink</a><ul>
+<li><a href="#partial-correlation-1">partial correlation</a></li>
+<li><a href="#correlation-1">correlation</a></li>
+</ul></li>
+<li><a href="#performance-comparison">Performance comparison</a><ul>
+<li><a href="#partial-correlation-2">partial correlation</a></li>
+<li><a href="#correlation-2">correlation</a></li>
+</ul></li>
+</ul>
+</div>
+
+<div id="intro" class="section level2">
+<h2>Intro</h2>
+<p>In this script, we investigate if GLASSO and CorShrink can be combined to estimate the inverse correlation matrix or the partial correlation matrix.</p>
+<pre class="r"><code>library(CorShrink)
+library(glasso)
+library(Matrix)
+library(pracma)
+library(corrplot)
+library(corpcor)</code></pre>
+</div>
+<div id="model" class="section level2">
+<h2>Model</h2>
+<p>The proposed model is as follows.</p>
+<div id="partial-correlation" class="section level3">
+<h3>partial correlation</h3>
+<p>Split the data <span class="math inline">\(D_{N \times P}\)</span> where <span class="math inline">\(N\)</span> is the number of samples and <span class="math inline">\(P\)</span> the number of features into two components - <span class="math inline">\(Dg_{N_1 \times P}\)</span> and <span class="math inline">\(Dc_{N_2 times P}\)</span> where <span class="math inline">\(N_1 + N_2 = N\)</span>. The dataset <span class="math inline">\(Dg\)</span> is then used to fit glasso and <span class="math inline">\(Dc\)</span> is used to fit CorShrink.</p>
+<ul>
+<li>Fit GLASSO on <span class="math inline">\(Dg\)</span> to get an estimate inverse correlation <span class="math inline">\(\Sigma^{+}\)</span>.</li>
+<li>Take square root matrix of <span class="math inline">\(\Sigma^{+}\)</span>, namely <span class="math inline">\(\Sigma^{+0.5}\)</span>.</li>
+<li>Compute <span class="math inline">\(Y = \Sigma^{+0.5} (Dc)^{T}\)</span>.</li>
+<li>Apply <strong>CorShrink</strong> on <span class="math inline">\(Y\)</span> - say the correlation estimate from this fit is <span class="math inline">\(L\)</span>.</li>
+<li>Take <span class="math inline">\(\Sigma^{+0.5} L \Sigma^{+0.5}\)</span> as the final estimate of the inverse correlation matrix.</li>
+</ul>
+<p>Actually we switch between the hold out sets and take average to call the invese correlation matrix and then compare these matrices at the level of the partial correlations.</p>
+</div>
+<div id="correlation" class="section level3">
+<h3>correlation</h3>
+<p>Split the data <span class="math inline">\(D_{N \times P}\)</span> where <span class="math inline">\(N\)</span> is the number of samples and <span class="math inline">\(P\)</span> the number of features into two components - <span class="math inline">\(Dg_{N_1 \times P}\)</span> and <span class="math inline">\(Dc_{N_2 times P}\)</span> where <span class="math inline">\(N_1 + N_2 = N\)</span>. The dataset <span class="math inline">\(Dg\)</span> is then used to fit glasso and <span class="math inline">\(Dc\)</span> is used to fit CorShrink.</p>
+<ul>
+<li>Fit GLASSO on <span class="math inline">\(Dg\)</span> to get an estimate inverse correlation <span class="math inline">\(\Sigma^{+}\)</span> and correlation estimate <span class="math inline">\(\hat{\Sigma}\)</span>.</li>
+<li>Take square root matrix of <span class="math inline">\(\Sigma^{+}\)</span>, namely <span class="math inline">\(\Sigma^{+0.5}\)</span>.</li>
+<li>Compute <span class="math inline">\(Y = \Sigma^{+0.5} (Dc)^{T}\)</span>.</li>
+<li>Apply <strong>CorShrink</strong> on <span class="math inline">\(Y\)</span> - say the correlation estimate from this fit is <span class="math inline">\(L\)</span>.</li>
+<li>Take <span class="math inline">\(\hat{\Sigma}^{0.5} L \hat{\Sigma}^{0.5}\)</span> as the final estimate of the covariance matrix - which is then converted to correlation.</li>
+</ul>
+</div>
+</div>
+<div id="function-for-combining-glasso-and-corshrink" class="section level2">
+<h2>Function for combining GLASSO and CorShrink</h2>
+<pre class="r"><code>glasso_corshrink_combine_pcor &lt;- function(data_g, data_c, lambda_glasso=0.1){
+  if(ncol(data_g) != ncol(data_c)){
+    stop(&quot;data_g and data_c must have same number of columns (features)&quot;)
+  }
+  S_glasso &lt;- cov(data_g, method = &quot;pearson&quot;)
+  out &lt;- glasso(S_glasso, lambda_glasso) 
+  L &lt;- pracma::sqrtm(out$wi)$B
+  data_new &lt;- t(L %*% t(data_c))
+  corshrink_out &lt;- CorShrink::CorShrinkData(data_new)$cor
+  inv_est &lt;- L %*% corshrink_out %*% t(L)
+  pcor_est &lt;- -cov2cor(inv_est)
+  diag(pcor_est) &lt;- rep(1, dim(pcor_est)[1])
+  return(pcor_est)
+}</code></pre>
+<pre class="r"><code>glasso_corshrink_combine_cor &lt;- function(data_g, data_c, lambda_glasso=0.1){
+  if(ncol(data_g) != ncol(data_c)){
+    stop(&quot;data_g and data_c must have same number of columns (features)&quot;)
+  }
+  S_glasso &lt;- cov(data_g, method = &quot;pearson&quot;)
+  out &lt;- glasso(S_glasso, lambda_glasso) 
+  L &lt;- pracma::sqrtm(out$wi)$B
+  Lcor &lt;- pracma::sqrtm(out$w)$B
+  data_new &lt;- t(L %*% t(data_c))
+  corshrink_out &lt;- CorShrink::CorShrinkData(data_new)$cor
+  cor_est &lt;- cov2cor(Lcor %*% corshrink_out %*% t(Lcor))
+  return(cor_est)
+}</code></pre>
+</div>
+<div id="example-simulation" class="section level2">
+<h2>Example Simulation</h2>
+<p>We simulate from a hub correlation population structure model.</p>
+<pre class="r"><code>#################  Choice of n and P  ############################
+n &lt;- 10
+P &lt;- 100
+
+
+#################  Generate the hub correlation matrix  #########################
+block &lt;- 10
+mat &lt;- 0.3*diag(1,block) + 0.7*rep(1,block) %*% t(rep(1, block))
+Sigma &lt;-   bdiag(mat, mat, mat, mat, mat, mat, mat, mat, mat, mat)
+corSigma &lt;- cov2cor(Sigma)
+pcorSigma &lt;- cor2pcor(corSigma)
+
+data &lt;- MASS::mvrnorm(n,rep(0,P),Sigma)
+S &lt;- cov(data, method = &quot;pearson&quot;)</code></pre>
+<pre class="r"><code>col2 &lt;- c(&quot;blue&quot;, &quot;white&quot;, &quot;red&quot;)
+corrplot(pcorSigma, diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = &quot;td&quot;, tl.cex = 0.2, tl.col = &quot;black&quot;,
+         rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,
+         method = &quot;color&quot;, type = &quot;upper&quot;)</code></pre>
+<p><img src="glasso_corshrink_combine_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+</div>
+<div id="run-glasso" class="section level2">
+<h2>Run GLASSO</h2>
+<pre class="r"><code>glasso1 &lt;- glasso(S, 0.1)
+pcor_est2 &lt;- -cov2cor(glasso1$wi)
+diag(pcor_est2) &lt;- rep(1, dim(pcor_est2)[1])
+
+cor_est2 &lt;- cov2cor(glasso1$w)
+
+col2 &lt;- c(&quot;blue&quot;, &quot;white&quot;, &quot;red&quot;)
+corrplot(pcor_est2, diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = &quot;td&quot;, tl.cex = 0.2, tl.col = &quot;black&quot;,
+         rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,
+         method = &quot;color&quot;, type = &quot;upper&quot;)</code></pre>
+<p><img src="glasso_corshrink_combine_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<pre class="r"><code>corrplot(cor_est2, diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = &quot;td&quot;, tl.cex = 0.2, tl.col = &quot;black&quot;,
+         rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,
+         method = &quot;color&quot;, type = &quot;upper&quot;)</code></pre>
+<p><img src="glasso_corshrink_combine_files/figure-html/unnamed-chunk-6-2.png" width="672" /></p>
+</div>
+<div id="corshrink" class="section level2">
+<h2>CorShrink</h2>
+<pre class="r"><code>cor_est3 &lt;- CorShrink::CorShrinkData(data)$cor
+col2 &lt;- c(&quot;blue&quot;, &quot;white&quot;, &quot;red&quot;)
+corrplot(cor_est3, diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = &quot;td&quot;, tl.cex = 0.2, tl.col = &quot;black&quot;,
+         rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,
+         method = &quot;color&quot;, type = &quot;upper&quot;)</code></pre>
+<p><img src="glasso_corshrink_combine_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+</div>
+<div id="run-glasso-corshrink" class="section level2">
+<h2>Run GLASSO + CorShrink</h2>
+<div id="partial-correlation-1" class="section level3">
+<h3>partial correlation</h3>
+<pre class="r"><code>glasso_indices &lt;- sample(1:n, floor(n/2), replace = FALSE)
+corshrink_indices &lt;- setdiff(1:n, glasso_indices)
+
+out1 &lt;- glasso_corshrink_combine_pcor(data[glasso_indices, ],
+                                 data[corshrink_indices, ],
+                                 lambda_glasso = 0.1)
+out2 &lt;- glasso_corshrink_combine_pcor(data[corshrink_indices, ],
+                                 data[glasso_indices, ],
+                                 lambda_glasso = 0.1)
+pcor_est &lt;- 0.5*(out1+out2)
+
+col2 &lt;- c(&quot;blue&quot;, &quot;white&quot;, &quot;red&quot;)
+corrplot(pcor_est, diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = &quot;td&quot;, tl.cex = 0.2, tl.col = &quot;black&quot;,
+         rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,
+         method = &quot;color&quot;, type = &quot;upper&quot;)</code></pre>
+<p><img src="glasso_corshrink_combine_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+</div>
+<div id="correlation-1" class="section level3">
+<h3>correlation</h3>
+<pre class="r"><code>glasso_indices &lt;- sample(1:n, floor(n/2), replace = FALSE)
+corshrink_indices &lt;- setdiff(1:n, glasso_indices)
+
+out1 &lt;- glasso_corshrink_combine_cor(data[glasso_indices, ],
+                                 data[corshrink_indices, ],
+                                 lambda_glasso = 0.1)
+out2 &lt;- glasso_corshrink_combine_cor(data[corshrink_indices, ],
+                                 data[glasso_indices, ],
+                                 lambda_glasso = 0.1)
+cor_est &lt;- 0.5*(out1+out2)
+
+col2 &lt;- c(&quot;blue&quot;, &quot;white&quot;, &quot;red&quot;)
+corrplot(cor_est, diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = &quot;td&quot;, tl.cex = 0.2, tl.col = &quot;black&quot;,
+         rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,
+         method = &quot;color&quot;, type = &quot;upper&quot;)</code></pre>
+<p><img src="glasso_corshrink_combine_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+</div>
+</div>
+<div id="performance-comparison" class="section level2">
+<h2>Performance comparison</h2>
+<p>We compare the GLASSO and GLASSO+CorShrink strategies by comparing the estimated partial correlations from these methods with the population partial correlation</p>
+<div id="partial-correlation-2" class="section level3">
+<h3>partial correlation</h3>
+<pre class="r"><code>mean(sqrt((as.matrix(pcor_est) - as.matrix(pcorSigma))^2))</code></pre>
+<pre><code>## [1] 0.1226968</code></pre>
+<pre class="r"><code>mean(sqrt((as.matrix(pcor_est2) - as.matrix(pcorSigma))^2))</code></pre>
+<pre><code>## [1] 0.01573979</code></pre>
+</div>
+<div id="correlation-2" class="section level3">
+<h3>correlation</h3>
+<pre class="r"><code>mean(sqrt((as.matrix(cor_est) - as.matrix(corSigma))^2)) ## glasso+corshrink</code></pre>
+<pre><code>## [1] 0.2275878</code></pre>
+<pre class="r"><code>mean(sqrt((as.matrix(cor_est2) - as.matrix(corSigma))^2)) ## glasso</code></pre>
+<pre><code>## [1] 0.1972363</code></pre>
+<pre class="r"><code>mean(sqrt((as.matrix(cor_est3) - as.matrix(corSigma))^2)) ## corshrink</code></pre>
+<pre><code>## [1] 0.08011863</code></pre>
+</div>
+</div>
+
+<hr>
+<p>
+    This <a href="http://rmarkdown.rstudio.com">R Markdown</a> site was created with <a href="https://github.com/jdblischak/workflowr">workflowr</a>
+</p>
+<hr>
+
+<!-- To enable disqus, uncomment the section below and provide your disqus_shortname -->
+
+<!-- disqus
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'rmarkdown'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+-->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

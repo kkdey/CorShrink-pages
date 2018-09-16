@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Kushal K Dey" />
+
+
+<title>Eigenvalues distribution: CorShrink, corpcor, glasso, S</title>
+
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+<link rel="stylesheet" href="cosmo.css" type="text/css" />
+
+</head>
+
+<body>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:100,300,400,600" rel="stylesheet" type="text/css">
+    <link href="../docs/cosmo.css" rel="stylesheet">
+    <link href="../docs/cosmo.min.css" rel="stylesheet">
+</head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="../docs/bootstrap/js/bootstrap.min.js"></script>
+
+<body>
+
+<div class = "nav" align = "middle">
+<div class= "p1"></div>
+<p>
+  <a class="btn btn-large btn btn-primary" type="button" href = "index.html">CorShrink</a>
+  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow.html">HOME</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow_project.html">WORKFLOW</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "about.html">METHODS</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink">SOFTWARE</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "license.html">LICENSE</a>
+   &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink-pages">GITHUB</a>
+ </p>
+</div>
+<!-- <div class="nav">
+  <a href="index.html">Home page</a> &nbsp &nbsp
+  <a href="musings.html">Musings</a> &nbsp &nbsp
+  <a href="town.html">My town</a> &nbsp &nbsp
+  <a href="links.html">Links</a>
+</div> -->
+
+<!-- Main content -->
+</body>
+</html>
+
+
+<h1 class="title toc-ignore">Eigenvalues distribution: CorShrink, corpcor, glasso, S</h1>
+<h4 class="author"><em>Kushal K Dey</em></h4>
+<h4 class="date"><em>2/23/2018</em></h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#hub-correlation">Hub correlation</a></li>
+<li><a href="#toeplitz-correlation">Toeplitz correlation</a></li>
+<li><a href="#banded-precision">Banded precision</a></li>
+<li><a href="#combining-results">Combining results</a></li>
+</ul>
+</div>
+
+<p>We compare the eigenvalue distribution of various correlation estimation methods with the corresponding population eigenvalue distributions.</p>
+<pre class="r"><code>library(gridExtra)
+library(ggplot2)
+library(Matrix)
+library(psych)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;psych&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:ggplot2&#39;:
+## 
+##     %+%, alpha</code></pre>
+<pre class="r"><code>library(corpcor)
+library(CorShrink)
+library(glasso)</code></pre>
+<div id="hub-correlation" class="section level2">
+<h2>Hub correlation</h2>
+<pre class="r"><code>gg &lt;- list()
+
+num_samp &lt;- c(10, 50, 100, 1000)
+block &lt;- 10
+mat &lt;- 0.3*diag(1,block) + 0.7*rep(1,block) %*% t(rep(1, block))
+Sigma &lt;-   bdiag(mat, mat, mat, mat, mat, mat, mat, mat, mat, mat)
+corSigma &lt;- cov2cor(Sigma)
+
+for(num_iter in 1:length(num_samp)){
+  n &lt;- num_samp[num_iter]
+  P &lt;- 100
+  data &lt;- MASS::mvrnorm(n,rep(0,P),corSigma)
+  S &lt;- cov(data)
+
+
+  ###  GLASSO
+
+  nr  &lt;- 100
+  rho &lt;- seq(0.1,10,length=nr)
+  bic &lt;- rho
+  for(j in 1:nr){
+    a       &lt;- glasso::glasso(S,rho[j])
+    p_off_d &lt;- sum(a$wi!=0 &amp; col(S)&lt;row(S))
+    bic[j]  &lt;- -2*(a$loglik) + p_off_d*log(n)
+  }
+  best &lt;- which.min(bic)
+
+  a &lt;- glasso::glasso(S,rho[best])
+  glasso_cor &lt;- cov2cor(a$w)
+
+  ### Strimmer Shafer
+
+  strimmer_sample &lt;- corpcor::cor.shrink(data)
+
+
+  ### CorShrink
+
+  cov_sample_ML &lt;-  CorShrinkData(data, sd_boot = FALSE,
+                                  image = &quot;null&quot;,
+                                  ash.control = list())
+
+  num &lt;- 20
+  eigs.df &lt;- data.frame (&quot;x&quot; = rep(1:num, 5),
+                         &quot;y&quot; = c(eigen(cov2cor(S))$values[1:num], eigen(strimmer_sample)$values[1:num],
+                                 eigen(glasso_cor)$values[1:num], eigen(cov_sample_ML$ash_cor_PD)$values[1:num],
+                                 eigen(corSigma)$values[1:num]),
+                         &quot;color&quot; = c(rep(&quot;empirical&quot;, num), rep(&quot;strimmer&quot;,  num), rep(&quot;glasso&quot;, num),
+                                     rep(&quot;corshrink&quot;, num), rep(&quot;true&quot;, num)),
+                         &quot;type&quot; = c(rep(&quot;A&quot;, 4*num), rep(&quot;B&quot;, num)))
+
+
+  p &lt;- ggplot(eigs.df, aes(x=x, y=y, colour=color, linetype = color)) + geom_line(lty = 1, lwd = 0.7) +
+    scale_linetype_manual(values = c(rep(&quot;solid&quot;, 4), rep(&quot;dashed&quot;, 1))) +
+    scale_colour_manual(values=c(&quot;#000000&quot;, &quot;blue&quot;, &quot;green&quot;, &quot;gold&quot;,
+                                 &quot;red&quot;, &quot;#0072B2&quot;, &quot;#CC79A7&quot;, &quot;#F0E442&quot;)) +
+    theme_bw() + theme(legend.position=&quot;none&quot;) + 
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) 
+  gg[[num_iter]] &lt;- p
+  cat(&quot;We are at iteration&quot;, num_iter, &quot;\n&quot;)
+}</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.7069 
+## 
+## We are at iteration 1 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.3154 
+## 
+## We are at iteration 2 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.1909 
+## 
+## We are at iteration 3 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.0228 
+## 
+## We are at iteration 4</code></pre>
+<pre class="r"><code>grid.arrange(gg[[1]], gg[[2]], gg[[3]], gg[[4]], nrow = 2, ncol = 2)</code></pre>
+<p><img src="eigenvalues_simulation_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+</div>
+<div id="toeplitz-correlation" class="section level2">
+<h2>Toeplitz correlation</h2>
+<pre class="r"><code>DM_toeplitz = function(n,P){
+  library(&quot;MASS&quot;)
+  index1=sort(sample(seq(1:n),(n/2)))
+  index2=seq(1:n)[-index1]
+  Sigmatp=function(P){
+    a=array(0,dim=c(P,P))
+    for(i in 1:P){
+      for(j in 1:P){
+        a[i,j]=max(1-0.1*(abs(i-j)),0)
+      }
+    }
+    return(a)
+  }
+  Sigma = Sigmatp(P)
+  data = mvrnorm(n,rep(0,P),Sigma)
+  Xtest = data[index2,]
+  Xtrain = data[index1,]
+  Omega = solve(Sigma)
+  return(list(Xtrain = Xtrain, Xtest = Xtest, Sigma = Sigma))
+}
+
+
+num_samp &lt;- c(10, 50, 100, 1000)
+
+for(num_iter in 1:length(num_samp)){
+  n &lt;- num_samp[num_iter]
+  P &lt;- 100
+
+
+  ll &lt;- DM_toeplitz(n=n, P=P)
+  data &lt;- rbind(ll$Xtrain, ll$Xtest)
+  Sigma &lt;- ll$Sigma
+  corSigma &lt;- cov2cor(Sigma)
+
+  S &lt;- cov2cor(cov(data))
+
+  ###  GLASSO
+
+  nr  &lt;- 100
+  rho &lt;- seq(0.1,10,length=nr)
+  bic &lt;- rho
+  for(j in 1:nr){
+    a       &lt;- glasso::glasso(S,rho[j])
+    p_off_d &lt;- sum(a$wi!=0 &amp; col(S)&lt;row(S))
+    bic[j]  &lt;- -2*(a$loglik) + p_off_d*log(n)
+  }
+  best &lt;- which.min(bic)
+
+  a &lt;- glasso::glasso(S,rho[best])
+  glasso_cor &lt;- cov2cor(a$w)
+
+  ### Strimmer Shafer
+
+  strimmer_sample &lt;- corpcor::cor.shrink(data)
+
+
+  ### CorShrink
+
+  cov_sample_ML &lt;-  CorShrinkData(data, sd_boot = FALSE, 
+                                  image = &quot;null&quot;,
+                                  ash.control = list())
+
+  num &lt;- 20
+  eigs.df &lt;- data.frame (&quot;x&quot; = rep(1:num, 5),
+                         &quot;y&quot; = c(eigen(S)$values[1:num], eigen(strimmer_sample)$values[1:num],
+                                 eigen(glasso_cor)$values[1:num],   eigen(cov_sample_ML$ash_cor_PD)$values[1:num],
+                                 eigen(corSigma)$values[1:num]),
+                         &quot;color&quot; = c(rep(&quot;empirical&quot;, num), rep(&quot;strimmer&quot;,  num), rep(&quot;glasso&quot;, num),
+                                     rep(&quot;corshrink&quot;, num), rep(&quot;true&quot;, num)),
+                         &quot;type&quot; = c(rep(&quot;A&quot;, 4*num), rep(&quot;B&quot;, num)))
+
+
+   p &lt;- ggplot(eigs.df, aes(x=x, y=y, colour=color, linetype = color)) + geom_line(lty = 1, lwd = 0.7) +
+    scale_linetype_manual(values = c(rep(&quot;solid&quot;, 4), rep(&quot;dashed&quot;, 1))) +
+    scale_colour_manual(values=c(&quot;#000000&quot;, &quot;blue&quot;, &quot;green&quot;, &quot;gold&quot;,
+                                 &quot;red&quot;, &quot;#0072B2&quot;, &quot;#CC79A7&quot;, &quot;#F0E442&quot;)) +
+    theme_bw() + theme(legend.position=&quot;none&quot;) + 
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) 
+  gg[[(4+num_iter)]] &lt;- p
+  cat(&quot;We are at iteration&quot;, num_iter, &quot;\n&quot;)
+}</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.7122 
+## 
+## We are at iteration 1 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.2775 
+## 
+## We are at iteration 2 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.1564 
+## 
+## We are at iteration 3 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.0184 
+## 
+## We are at iteration 4</code></pre>
+<pre class="r"><code>grid.arrange(gg[[5]], gg[[6]], gg[[7]], gg[[8]], nrow = 2, ncol = 2)</code></pre>
+<p><img src="eigenvalues_simulation_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+</div>
+<div id="banded-precision" class="section level2">
+<h2>Banded precision</h2>
+<pre class="r"><code>num_samp &lt;- c(10,  50, 100, 1000)
+
+diags &lt;- list()
+diags[[1]] &lt;- rep(1, 100)
+diags[[2]] &lt;- rep(0.5, 100)
+Kinv &lt;- bandSparse(100, k = -(0:1), diag = diags, symm = TRUE)
+K &lt;- solve(Kinv)
+corSigma &lt;- cov2cor(K)
+
+for(num_iter in 1:length(num_samp)){
+  n &lt;- num_samp[num_iter]
+  P &lt;- 100
+  data &lt;- MASS::mvrnorm(n,rep(0,P),corSigma)
+  S &lt;- cov(data)
+
+
+  ###  GLASSO
+
+  nr  &lt;- 100
+  rho &lt;- seq(0.1,10,length=nr)
+  bic &lt;- rho
+  for(j in 1:nr){
+    a       &lt;- glasso::glasso(S,rho[j])
+    p_off_d &lt;- sum(a$wi!=0 &amp; col(S)&lt;row(S))
+    bic[j]  &lt;- -2*(a$loglik) + p_off_d*log(n)
+  }
+  best &lt;- which.min(bic)
+
+  a &lt;- glasso::glasso(S,rho[best])
+  glasso_cor &lt;- cov2cor(a$w)
+
+  ### Strimmer Shafer
+
+  strimmer_sample &lt;- corpcor::cor.shrink(data)
+
+
+  ### CorShrink
+
+  cov_sample_ML &lt;-  CorShrinkData(data, sd_boot = FALSE, 
+                                  image = &quot;null&quot;,
+                                  ash.control = list())
+
+  num &lt;- 20
+  eigs.df &lt;- data.frame (&quot;x&quot; = rep(1:num, 5),
+                         &quot;y&quot; = c(eigen(cov2cor(S))$values[1:num], eigen(strimmer_sample)$values[1:num],
+                                 eigen(glasso_cor)$values[1:num], eigen(cov_sample_ML$ash_cor_only)$values[1:num],
+                                 eigen(corSigma)$values[1:num]),
+                         &quot;color&quot; = c(rep(&quot;empirical&quot;, num), rep(&quot;strimmer&quot;,  num), rep(&quot;glasso&quot;, num),
+                                     rep(&quot;corshrink&quot;, num), rep(&quot;true&quot;, num)),
+                         &quot;type&quot; = c(rep(&quot;A&quot;, 4*num), rep(&quot;B&quot;, num)))
+
+
+  p &lt;- ggplot(eigs.df, aes(x=x, y=y, colour=color, linetype = color)) + geom_line(lty = 1, lwd = 0.7) +
+    scale_linetype_manual(values = c(rep(&quot;solid&quot;, 4), rep(&quot;dashed&quot;, 1))) +
+    scale_colour_manual(values=c(&quot;#000000&quot;, &quot;blue&quot;, &quot;green&quot;, &quot;gold&quot;,
+                                 &quot;red&quot;, &quot;#0072B2&quot;, &quot;#CC79A7&quot;, &quot;#F0E442&quot;)) +
+    theme_bw() + theme(legend.position=&quot;none&quot;) + 
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) 
+  gg[[(8+num_iter)]] &lt;- p
+  cat(&quot;We are at iteration&quot;, num_iter, &quot;\n&quot;)
+}</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.3259 
+## 
+## We are at iteration 1 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.072 
+## 
+## We are at iteration 2 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.0382 
+## 
+## We are at iteration 3 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.0044 
+## 
+## We are at iteration 4</code></pre>
+<pre class="r"><code>grid.arrange(gg[[9]], gg[[10]], gg[[11]], gg[[12]], nrow = 2, ncol = 2)</code></pre>
+<p><img src="eigenvalues_simulation_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<pre class="r"><code> p &lt;- ggplot(eigs.df, aes(x=x, y=y, colour=color, linetype = color)) + geom_line(lty = 1, lwd = 0.7) +
+    scale_linetype_manual(values = c(rep(&quot;solid&quot;, 4), rep(&quot;dashed&quot;, 1))) +
+    scale_colour_manual(values=c(&quot;#000000&quot;, &quot;blue&quot;, &quot;green&quot;, &quot;gold&quot;,
+                                 &quot;red&quot;, &quot;#0072B2&quot;, &quot;#CC79A7&quot;, &quot;#F0E442&quot;)) +
+    ggtitle(paste0(&quot;n=&quot;, num_samp[num_iter], &quot;, p=100&quot;)) + xlab(&quot;Index&quot;) + ylab(&quot;eigenvalues&quot;)+
+    theme_bw() 
+print(p)</code></pre>
+<p><img src="eigenvalues_simulation_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+</div>
+<div id="combining-results" class="section level2">
+<h2>Combining results</h2>
+<pre class="r"><code>grid.arrange(gg[[1]],gg[[2]],gg[[3]],gg[[4]],
+             gg[[5]],gg[[6]],gg[[7]],gg[[8]],
+             gg[[9]],gg[[10]],gg[[11]],gg[[12]], 
+             nrow = 4, ncol = 3, as.table = FALSE) </code></pre>
+<p><img src="eigenvalues_simulation_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+</div>
+
+<hr>
+<p>
+    This <a href="http://rmarkdown.rstudio.com">R Markdown</a> site was created with <a href="https://github.com/jdblischak/workflowr">workflowr</a>
+</p>
+<hr>
+
+<!-- To enable disqus, uncomment the section below and provide your disqus_shortname -->
+
+<!-- disqus
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'rmarkdown'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+-->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

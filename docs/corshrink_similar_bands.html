@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Kushal K Dey" />
+
+
+<title>CorShrink on similarly banded sparse precision and correlation matrices</title>
+
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+<link rel="stylesheet" href="cosmo.css" type="text/css" />
+
+</head>
+
+<body>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:100,300,400,600" rel="stylesheet" type="text/css">
+    <link href="../docs/cosmo.css" rel="stylesheet">
+    <link href="../docs/cosmo.min.css" rel="stylesheet">
+</head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="../docs/bootstrap/js/bootstrap.min.js"></script>
+
+<body>
+
+<div class = "nav" align = "middle">
+<div class= "p1"></div>
+<p>
+  <a class="btn btn-large btn btn-primary" type="button" href = "index.html">CorShrink</a>
+  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow.html">HOME</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow_project.html">WORKFLOW</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "about.html">METHODS</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink">SOFTWARE</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "license.html">LICENSE</a>
+   &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink-pages">GITHUB</a>
+ </p>
+</div>
+<!-- <div class="nav">
+  <a href="index.html">Home page</a> &nbsp &nbsp
+  <a href="musings.html">Musings</a> &nbsp &nbsp
+  <a href="town.html">My town</a> &nbsp &nbsp
+  <a href="links.html">Links</a>
+</div> -->
+
+<!-- Main content -->
+</body>
+</html>
+
+
+<h1 class="title toc-ignore">CorShrink on similarly banded sparse precision and correlation matrices</h1>
+<h4 class="author"><em>Kushal K Dey</em></h4>
+<h4 class="date"><em>1/28/2018</em></h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#set-up">set up</a></li>
+<li><a href="#sparse-population-precision-matrix">Sparse population precision matrix</a></li>
+<li><a href="#sparse-population-correlation-matrix">Sparse population correlation matrix</a></li>
+<li><a href="#n-10-p-200">n = 10, p = 200</a></li>
+<li><a href="#n-25-p-200">n = 25, p = 200</a></li>
+<li><a href="#n-50-p-200">n = 50, p = 200</a></li>
+<li><a href="#n-75-p-200">n = 75, p = 200</a></li>
+</ul>
+</div>
+
+<pre class="r"><code>library(MASS)
+library(huge)</code></pre>
+<pre><code>## Loading required package: Matrix</code></pre>
+<pre><code>## Loading required package: lattice</code></pre>
+<pre><code>## Loading required package: igraph</code></pre>
+<pre><code>## 
+## Attaching package: &#39;igraph&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:stats&#39;:
+## 
+##     decompose, spectrum</code></pre>
+<pre><code>## The following object is masked from &#39;package:base&#39;:
+## 
+##     union</code></pre>
+<pre class="r"><code>library(CorShrink)
+library(corpcor)</code></pre>
+<div id="set-up" class="section level2">
+<h2>set up</h2>
+<pre class="r"><code>diags &lt;- list()
+diags[[1]] &lt;- rep(1, 100)
+diags[[2]] &lt;- rep(0.5, 100)
+diags[[3]] &lt;- rep(0.4, 100)
+
+Kinv &lt;- bandSparse(100, k = -(0:2), diag = diags, symm = TRUE)
+K &lt;- solve(Kinv)
+corSigma &lt;- cov2cor(K)</code></pre>
+</div>
+<div id="sparse-population-precision-matrix" class="section level2">
+<h2>Sparse population precision matrix</h2>
+<p>Plot the precision matrix</p>
+<pre class="r"><code>col=c(rep(rgb(0,1,0), 1),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),1))
+
+image(as.matrix(Kinv),
+      col=col, main=paste0(&quot;pop precision matrix&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_similar_bands_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+</div>
+<div id="sparse-population-correlation-matrix" class="section level2">
+<h2>Sparse population correlation matrix</h2>
+<p>The non-sparse population correlation matrix</p>
+<pre class="r"><code>col=c(rep(rgb(0,1,0), 1),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),1))
+
+image(as.matrix(corSigma),
+      col=col, main=paste0(&quot;pop correlation matrix&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_similar_bands_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>Drawing Gaussian random variables from this population correlation matrix with the mean equal to 0.</p>
+</div>
+<div id="n-10-p-200" class="section level2">
+<h2>n = 10, p = 200</h2>
+<pre class="r"><code>set.seed(100)
+P &lt;- dim(K)[1]
+n=10
+data &lt;- MASS::mvrnorm(n,rep(0,P),K)</code></pre>
+<pre class="r"><code>nr  &lt;- 100
+rho &lt;- seq(0.1,10,length=nr)
+bic &lt;- rho
+S &lt;- cov(data)
+for(j in 1:nr){
+  a       &lt;- glasso::glasso(S,rho[j])
+  p_off_d &lt;- sum(a$wi!=0 &amp; col(S)&lt;row(S))
+  bic[j]  &lt;- -2*(a$loglik) + p_off_d*log(n)
+}
+best &lt;- which.min(bic)
+plot(rho,bic)</code></pre>
+<p><img src="corshrink_similar_bands_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<pre class="r"><code>a &lt;- glasso::glasso(S,rho[best])</code></pre>
+<pre class="r"><code>## Strimmer Shafer 
+
+strimmer_sample &lt;- corpcor::cor.shrink(data)</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.7554</code></pre>
+<pre class="r"><code>## CorShrink
+
+cov_sample_ML &lt;-  CorShrinkData(data, sd_boot = FALSE, optmethod = &quot;mixEM&quot;,
+                     image.control = list(x.cex = 0.3, y.cex = 0.3),
+                     ash.control = list())</code></pre>
+<pre><code>## Due to absence of package REBayes, switching to EM algorithm</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre class="r"><code>col=c(rep(rgb(0,1,0), 1),rev(rgb(seq(1,0,length=10000),1,seq(1,0,length=10000))),
+      rgb(1,seq(1,0,length=10000),seq(1,0,length=10000)), rep(rgb(1,0,0),1))
+
+par(mfrow = c(2,2))
+
+image(as.matrix(cov2cor(S)),
+      col=col, main=paste0(&quot;sample corr matrix&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(as.matrix(cov2cor(a$w)),
+      col=col, main=paste0(&quot;GLASSO&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(strimmer_sample,
+      col=col, main=paste0(&quot;shafer strimmer&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(as.matrix(cov_sample_ML$ash_cor_PD),
+      col=col, main=paste0(&quot;CorShrink&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_similar_bands_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+</div>
+<div id="n-25-p-200" class="section level2">
+<h2>n = 25, p = 200</h2>
+<pre class="r"><code>set.seed(100)
+P &lt;- dim(K)[1]
+n=25
+data &lt;- MASS::mvrnorm(n,rep(0,P),K)</code></pre>
+<pre class="r"><code>nr  &lt;- 100
+rho &lt;- seq(0.1,10,length=nr)
+bic &lt;- rho
+S &lt;- cov(data)
+for(j in 1:nr){
+  a       &lt;- glasso::glasso(S,rho[j])
+  p_off_d &lt;- sum(a$wi!=0 &amp; col(S)&lt;row(S))
+  bic[j]  &lt;- -2*(a$loglik) + p_off_d*log(n)
+}
+best &lt;- which.min(bic)
+plot(rho,bic)</code></pre>
+<p><img src="corshrink_similar_bands_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<pre class="r"><code>a &lt;- glasso::glasso(S,rho[best])</code></pre>
+<pre class="r"><code>## Strimmer Shafer 
+
+strimmer_sample &lt;- corpcor::cor.shrink(data)</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.6805</code></pre>
+<pre class="r"><code>## CorShrink
+
+cov_sample_ML &lt;-  CorShrinkData(data, sd_boot = FALSE, optmethod = &quot;mixEM&quot;,
+                     image.control = list(x.cex = 0.3, y.cex = 0.3),
+                     ash.control = list())</code></pre>
+<pre><code>## Due to absence of package REBayes, switching to EM algorithm</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre class="r"><code>col=c(rep(rgb(0,1,0), 1),rev(rgb(seq(1,0,length=10000),1,seq(1,0,length=10000))),
+      rgb(1,seq(1,0,length=10000),seq(1,0,length=10000)), rep(rgb(1,0,0),1))
+
+par(mfrow = c(2,2))
+
+image(as.matrix(cov2cor(S)),
+      col=col, main=paste0(&quot;sample corr matrix&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(as.matrix(cov2cor(a$w)),
+      col=col, main=paste0(&quot;GLASSO&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(strimmer_sample,
+      col=col, main=paste0(&quot;shafer strimmer&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(as.matrix(cov_sample_ML$ash_cor_PD),
+      col=col, main=paste0(&quot;CorShrink&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_similar_bands_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+</div>
+<div id="n-50-p-200" class="section level2">
+<h2>n = 50, p = 200</h2>
+<pre class="r"><code>set.seed(100)
+P &lt;- dim(K)[1]
+n=50
+data &lt;- MASS::mvrnorm(n,rep(0,P),K)</code></pre>
+<pre class="r"><code>nr  &lt;- 100
+rho &lt;- seq(0.1,10,length=nr)
+bic &lt;- rho
+S &lt;- cov(data)
+for(j in 1:nr){
+  a       &lt;- glasso::glasso(S,rho[j])
+  p_off_d &lt;- sum(a$wi!=0 &amp; col(S)&lt;row(S))
+  bic[j]  &lt;- -2*(a$loglik) + p_off_d*log(n)
+}
+best &lt;- which.min(bic)
+plot(rho,bic)</code></pre>
+<p><img src="corshrink_similar_bands_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
+<pre class="r"><code>a &lt;- glasso::glasso(S,rho[best])</code></pre>
+<pre class="r"><code>## Strimmer Shafer 
+
+strimmer_sample &lt;- corpcor::cor.shrink(data)</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.5268</code></pre>
+<pre class="r"><code>## CorShrink
+
+cov_sample_ML &lt;-  CorShrinkData(data, sd_boot = FALSE, optmethod = &quot;mixEM&quot;,
+                     image.control = list(x.cex = 0.3, y.cex = 0.3),
+                     ash.control = list())</code></pre>
+<pre><code>## Due to absence of package REBayes, switching to EM algorithm</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre class="r"><code>col=c(rep(rgb(0,1,0), 1),rev(rgb(seq(1,0,length=10000),1,seq(1,0,length=10000))),
+      rgb(1,seq(1,0,length=10000),seq(1,0,length=10000)), rep(rgb(1,0,0),1))
+
+par(mfrow = c(2,2))
+
+image(as.matrix(cov2cor(S)),
+      col=col, main=paste0(&quot;sample corr matrix&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(as.matrix(cov2cor(a$w)),
+      col=col, main=paste0(&quot;GLASSO&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(strimmer_sample,
+      col=col, main=paste0(&quot;shafer strimmer&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(as.matrix(cov_sample_ML$ash_cor_PD),
+      col=col, main=paste0(&quot;CorShrink&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_similar_bands_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
+</div>
+<div id="n-75-p-200" class="section level2">
+<h2>n = 75, p = 200</h2>
+<pre class="r"><code>set.seed(100)
+P &lt;- dim(K)[1]
+n=75
+data &lt;- MASS::mvrnorm(n,rep(0,P),K)</code></pre>
+<pre class="r"><code>nr  &lt;- 100
+rho &lt;- seq(0.1,10,length=nr)
+bic &lt;- rho
+S &lt;- cov(data)
+for(j in 1:nr){
+  a       &lt;- glasso::glasso(S,rho[j])
+  p_off_d &lt;- sum(a$wi!=0 &amp; col(S)&lt;row(S))
+  bic[j]  &lt;- -2*(a$loglik) + p_off_d*log(n)
+}
+best &lt;- which.min(bic)
+plot(rho,bic)</code></pre>
+<p><img src="corshrink_similar_bands_files/figure-html/unnamed-chunk-21-1.png" width="672" /></p>
+<pre class="r"><code>a &lt;- glasso::glasso(S,rho[best])</code></pre>
+<pre class="r"><code>## Strimmer Shafer 
+
+strimmer_sample &lt;- corpcor::cor.shrink(data)</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.408</code></pre>
+<pre class="r"><code>## CorShrink
+
+cov_sample_ML &lt;-  CorShrinkData(data, sd_boot = FALSE, optmethod = &quot;mixEM&quot;,
+                     image.control = list(x.cex = 0.3, y.cex = 0.3),
+                     ash.control = list())</code></pre>
+<pre><code>## Due to absence of package REBayes, switching to EM algorithm</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre class="r"><code>col=c(rep(rgb(0,1,0), 1),rev(rgb(seq(1,0,length=10000),1,seq(1,0,length=10000))),
+      rgb(1,seq(1,0,length=10000),seq(1,0,length=10000)), rep(rgb(1,0,0),1))
+
+par(mfrow = c(2,2))
+
+image(as.matrix(cov2cor(S)),
+      col=col, main=paste0(&quot;sample corr matrix&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(as.matrix(cov2cor(a$w)),
+      col=col, main=paste0(&quot;GLASSO&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(strimmer_sample,
+      col=col, main=paste0(&quot;shafer strimmer&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(as.matrix(cov_sample_ML$ash_cor_PD),
+      col=col, main=paste0(&quot;CorShrink&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_similar_bands_files/figure-html/unnamed-chunk-24-1.png" width="672" /></p>
+</div>
+
+<hr>
+<p>
+    This <a href="http://rmarkdown.rstudio.com">R Markdown</a> site was created with <a href="https://github.com/jdblischak/workflowr">workflowr</a>
+</p>
+<hr>
+
+<!-- To enable disqus, uncomment the section below and provide your disqus_shortname -->
+
+<!-- disqus
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'rmarkdown'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+-->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

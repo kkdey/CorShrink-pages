@@ -1,0 +1,317 @@
+---
+title: 'CorShrink on sparse correlation and non-sparse precision matrix : part 2'
+author: "Kushal K Dey"
+date: "1/28/2018"
+output: html_document
+---
+
+```{r}
+library(MASS)
+library(huge)
+library(CorShrink)
+library(corpcor)
+```
+
+## set up 
+
+```{r}
+diags <- list()
+diags[[1]] <- rep(1, 100)
+diags[[2]] <- rep(-0.5, 100)
+diags[[3]] <- rep(0.2, 100)
+diags[[4]] <- rep(-0.2, 100)
+
+K <- bandSparse(100, k = -(0:3), diag = diags, symm = TRUE)
+Kinv <- solve(K)
+corSigma <- cov2cor(K)
+```
+
+## Sparse population precision matrix
+
+Plot the precision matrix 
+
+```{r}
+col=c(rep(rgb(0,1,0), 1),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),1))
+
+image(as.matrix(Kinv),
+      col=col, main=paste0("pop precision matrix"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(min(Kinv),max(Kinv)))
+```
+
+## Non sparse population correlation matrix 
+
+The non-sparse population correlation matrix 
+
+```{r}
+col=c(rep(rgb(0,1,0), 1),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),1))
+
+image(as.matrix(corSigma),
+      col=col, main=paste0("pop correlation matrix"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+Drawing Gaussian random variables from this population correlation matrix with the mean equal to 0.
+
+## n = 10, p = 200
+
+```{r}
+set.seed(100)
+P <- dim(K)[1]
+n=10
+data <- MASS::mvrnorm(n,rep(0,P),K)
+```
+
+```{r}
+nr  <- 100
+rho <- seq(0.1,10,length=nr)
+bic <- rho
+S <- cov(data)
+for(j in 1:nr){
+  a       <- glasso::glasso(S,rho[j])
+  p_off_d <- sum(a$wi!=0 & col(S)<row(S))
+  bic[j]  <- -2*(a$loglik) + p_off_d*log(n)
+}
+best <- which.min(bic)
+plot(rho,bic)
+
+```
+
+```{r}
+a <- glasso::glasso(S,rho[best])
+```
+
+```{r}
+
+## Strimmer Shafer 
+
+strimmer_sample <- corpcor::cor.shrink(data)
+
+## CorShrink
+
+cov_sample_ML <-  CorShrinkData(data, sd_boot = FALSE, optmethod = "mixEM",
+                     image.control = list(x.cex = 0.3, y.cex = 0.3),
+                     ash.control = list())
+
+```
+
+```{r}
+col=c(rep(rgb(0,1,0), 1),rev(rgb(seq(1,0,length=10000),1,seq(1,0,length=10000))),
+      rgb(1,seq(1,0,length=10000),seq(1,0,length=10000)), rep(rgb(1,0,0),1))
+
+par(mfrow = c(2,2))
+
+image(as.matrix(cov2cor(S)),
+      col=col, main=paste0("sample corr matrix"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(as.matrix(cov2cor(a$w)),
+      col=col, main=paste0("GLASSO"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(strimmer_sample,
+      col=col, main=paste0("shafer strimmer"), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(as.matrix(cov_sample_ML$ash_cor_PD),
+      col=col, main=paste0("CorShrink"), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+
+
+## n = 25, p = 200
+
+```{r}
+set.seed(100)
+P <- dim(K)[1]
+n=25
+data <- MASS::mvrnorm(n,rep(0,P),K)
+```
+
+```{r}
+nr  <- 100
+rho <- seq(0.1,10,length=nr)
+bic <- rho
+S <- cov(data)
+for(j in 1:nr){
+  a       <- glasso::glasso(S,rho[j])
+  p_off_d <- sum(a$wi!=0 & col(S)<row(S))
+  bic[j]  <- -2*(a$loglik) + p_off_d*log(n)
+}
+best <- which.min(bic)
+plot(rho,bic)
+
+```
+```{r}
+a <- glasso::glasso(S,rho[best])
+```
+
+```{r}
+
+## Strimmer Shafer 
+
+strimmer_sample <- corpcor::cor.shrink(data)
+
+## CorShrink
+
+cov_sample_ML <-  CorShrinkData(data, sd_boot = FALSE, optmethod = "mixEM",
+                     image.control = list(x.cex = 0.3, y.cex = 0.3),
+                     ash.control = list())
+
+```
+
+```{r}
+col=c(rep(rgb(0,1,0), 1),rev(rgb(seq(1,0,length=10000),1,seq(1,0,length=10000))),
+      rgb(1,seq(1,0,length=10000),seq(1,0,length=10000)), rep(rgb(1,0,0),1))
+
+par(mfrow = c(2,2))
+
+image(as.matrix(cov2cor(S)),
+      col=col, main=paste0("sample corr matrix"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(as.matrix(cov2cor(a$w)),
+      col=col, main=paste0("GLASSO"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(strimmer_sample,
+      col=col, main=paste0("shafer strimmer"), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(as.matrix(cov_sample_ML$ash_cor_PD),
+      col=col, main=paste0("CorShrink"), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+## n = 50, p = 200
+
+```{r}
+set.seed(100)
+P <- dim(K)[1]
+n=50
+data <- MASS::mvrnorm(n,rep(0,P),K)
+```
+
+```{r}
+nr  <- 100
+rho <- seq(0.1,10,length=nr)
+bic <- rho
+S <- cov(data)
+for(j in 1:nr){
+  a       <- glasso::glasso(S,rho[j])
+  p_off_d <- sum(a$wi!=0 & col(S)<row(S))
+  bic[j]  <- -2*(a$loglik) + p_off_d*log(n)
+}
+best <- which.min(bic)
+plot(rho,bic)
+
+```
+
+```{r}
+a <- glasso::glasso(S,rho[best])
+```
+
+```{r}
+
+## Strimmer Shafer 
+
+strimmer_sample <- corpcor::cor.shrink(data)
+
+## CorShrink
+
+cov_sample_ML <-  CorShrinkData(data, sd_boot = FALSE, optmethod = "mixEM",
+                     image.control = list(x.cex = 0.3, y.cex = 0.3),
+                     ash.control = list())
+
+```
+
+```{r}
+col=c(rep(rgb(0,1,0), 1),rev(rgb(seq(1,0,length=10000),1,seq(1,0,length=10000))),
+      rgb(1,seq(1,0,length=10000),seq(1,0,length=10000)), rep(rgb(1,0,0),1))
+
+par(mfrow = c(2,2))
+
+image(as.matrix(cov2cor(S)),
+      col=col, main=paste0("sample corr matrix"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(as.matrix(cov2cor(a$w)),
+      col=col, main=paste0("GLASSO"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(strimmer_sample,
+      col=col, main=paste0("shafer strimmer"), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(as.matrix(cov_sample_ML$ash_cor_PD),
+      col=col, main=paste0("CorShrink"), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+## n = 75, p = 200
+
+```{r}
+set.seed(100)
+P <- dim(K)[1]
+n=75
+data <- MASS::mvrnorm(n,rep(0,P),K)
+```
+
+```{r}
+nr  <- 100
+rho <- seq(0.1,10,length=nr)
+bic <- rho
+S <- cov(data)
+for(j in 1:nr){
+  a       <- glasso::glasso(S,rho[j])
+  p_off_d <- sum(a$wi!=0 & col(S)<row(S))
+  bic[j]  <- -2*(a$loglik) + p_off_d*log(n)
+}
+best <- which.min(bic)
+plot(rho,bic)
+
+```
+
+```{r}
+a <- glasso::glasso(S,rho[best])
+```
+
+```{r}
+
+## Strimmer Shafer 
+
+strimmer_sample <- corpcor::cor.shrink(data)
+
+## CorShrink
+
+cov_sample_ML <-  CorShrinkData(data, sd_boot = FALSE, optmethod = "mixEM",
+                     image.control = list(x.cex = 0.3, y.cex = 0.3),
+                     ash.control = list())
+
+```
+
+```{r}
+col=c(rep(rgb(0,1,0), 1),rev(rgb(seq(1,0,length=10000),1,seq(1,0,length=10000))),
+      rgb(1,seq(1,0,length=10000),seq(1,0,length=10000)), rep(rgb(1,0,0),1))
+
+par(mfrow = c(2,2))
+
+image(as.matrix(cov2cor(S)),
+      col=col, main=paste0("sample corr matrix"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(as.matrix(cov2cor(a$w)),
+      col=col, main=paste0("GLASSO"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(strimmer_sample,
+      col=col, main=paste0("shafer strimmer"), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(as.matrix(cov_sample_ML$ash_cor_PD),
+      col=col, main=paste0("CorShrink"), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+

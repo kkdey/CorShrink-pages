@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Kushal K Dey" />
+
+
+<title>How pCorShrink works.</title>
+
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+<link rel="stylesheet" href="cosmo.css" type="text/css" />
+
+</head>
+
+<body>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:100,300,400,600" rel="stylesheet" type="text/css">
+    <link href="../docs/cosmo.css" rel="stylesheet">
+    <link href="../docs/cosmo.min.css" rel="stylesheet">
+</head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="../docs/bootstrap/js/bootstrap.min.js"></script>
+
+<body>
+
+<div class = "nav" align = "middle">
+<div class= "p1"></div>
+<p>
+  <a class="btn btn-large btn btn-primary" type="button" href = "index.html">CorShrink</a>
+  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow.html">DEMO</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow_project.html">WORKFLOW</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink">SOFTWARE</a>
+ </p>
+</div>
+<!-- <div class="nav">
+  <a href="index.html">Home page</a> &nbsp &nbsp
+  <a href="musings.html">Musings</a> &nbsp &nbsp
+  <a href="town.html">My town</a> &nbsp &nbsp
+  <a href="links.html">Links</a>
+</div> -->
+
+<!-- Main content -->
+</body>
+</html>
+
+
+<h1 class="title toc-ignore">How pCorShrink works.</h1>
+<h4 class="author"><em>Kushal K Dey</em></h4>
+<h4 class="date"><em>6/27/2018</em></h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#model">Model</a></li>
+<li><a href="#adjustments">Adjustments</a><ul>
+<li><a href="#isee-method">ISEE method</a></li>
+<li><a href="#pcorshrink-ols">pCorShrink + OLS</a></li>
+<li><a href="#pcorshrink-glmnet">pCorShrink + glmnet</a></li>
+</ul></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>In this script, we present the modeling framework for the <em>pCorShrinkData</em> function of the <strong>CorShrink</strong> package. <em>pCorShrink</em> extends the adaptive correlation shrinkage approach of <strong>CorShrink</strong> package to shrinking partial correlations and hence faciliatating sparse graphical model representation of the variable associations.</p>
+<p>The central theme of the <em>pCorShrinkData</em> function is derived from the innovated scalable efficient estimation (ISEE) algorithm by <a href="https://projecteuclid.org/euclid.aos/1473685270">Fan and Lv, 2016</a>. We integrate a slightly modified version of the ISEE approach with the adaptive shrinkage formulation of <em>CorShrink</em> or <em>ashr</em>.</p>
+</div>
+<div id="model" class="section level2">
+<h2>Model</h2>
+<p>Assume</p>
+<p><span class="math display">\[ X_{n.} = \left( X_{n1}, X_{n2}, \cdots, X_{nP} \right ) \sim N \left (\mu_P, \Sigma_{P \times P} \right ) \]</span></p>
+<p>for each <span class="math inline">\(n=1,2,\cdots, N\)</span>, where <span class="math inline">\(N\)</span> is the number of samples and <span class="math inline">\(P\)</span> is the number of features/variables. For simplicity, we assume that <span class="math inline">\(\mu_{P} = 0\)</span>. Assume that <span class="math inline">\(\Omega = \Sigma^{-1}\)</span>. The partial correlation matrix <span class="math inline">\(R = ((R_{ij}))\)</span> is derived from <span class="math inline">\(\Omega\)</span> by the following relation.</p>
+<p><span class="math display">\[ R_{ij} = -\frac{\Omega_{ij}}{\sqrt{\Omega_{ii} \Omega_{jj}}} \]</span></p>
+<p>Now we know that</p>
+<p><span class="math display">\[ \tilde{X}_{n.} = \Omega X_{n.} \sim N(0, \Omega \Sigma \Omega = \Omega) \]</span></p>
+<p>So, in a way, if we knew <span class="math inline">\(\tilde{X}_{n.}\)</span>, we could just use <strong>CorShrinkData</strong> on these variables and that would have provided an estimator of <span class="math inline">\(\Omega\)</span>.</p>
+<p>For any submatrix <span class="math inline">\(A\)</span> of the set of variables <span class="math inline">\(\left\{1, 2, \cdots, P \right \}\)</span>, we can write</p>
+<p><span class="math display">\[ \tilde{X}_{A} = (X \Omega)_{A} = X_{A} \Omega_{A,A} + X_{A^{c}} \Omega_{A^{c},A}  = (X_{A} + X_{A^{c}}\Omega_{A^{c}A} \Omega^{-1}_{A,A}) \Omega_{A,A} = E_{A} \Omega_{AA}\]</span></p>
+<p>where we define</p>
+<p><span class="math display">\[ E_{A} = (X_{A} + X_{A^{c}}\Omega_{A^{c}A} \Omega^{-1}_{A,A}) \]</span></p>
+<p>We show that the <span class="math inline">\(E_{A}\)</span> values can be viewed as residuals from regression <span class="math inline">\(X_{A}\)</span> over <span class="math inline">\(X_{A^{c}}\)</span>.</p>
+<p>Now note that in a Gaussian graphical model, we have for each <span class="math inline">\(n\)</span>.</p>
+<p><span class="math display">\[ x_{nA} \; | \;  x_{nA^{c}}  \sim N \left ( - \Omega^{-1}_{A,A} \Omega_{A, A^{c}} x_{nA^{c}}, \Omega^{-1}_{A,A} \right)  \]</span></p>
+<p>So, if we regress <span class="math inline">\(x_{nA}\)</span> against <span class="math inline">\(x_{nA^{c}}\)</span>, then we have</p>
+<p><span class="math display">\[ x_{nA} = B_{A} x_{nA^{c}} + \epsilon_{nA} \]</span></p>
+<p>where <span class="math inline">\(B\)</span> is the matrix of coefficients from this linear regression model fit. This regression is same as taking each column <span class="math inline">\(X_{j}\)</span> from the subset <span class="math inline">\(j \in A\)</span> and run a separate regression with the predictors coming from the columns of <span class="math inline">\(X\)</span> matrix that are not in subset <span class="math inline">\(A\)</span>. The errors derived from the regression model fit are given by</p>
+<p><span class="math display">\[ E_{A} = X_{A} - X_{A^{c}} B^{T} = X_{A} + X_{A^{c}}\Omega_{A^{c}A} \Omega^{-1}_{A,A} \]</span></p>
+<p>and their estimates <span class="math inline">\(\hat{E}_{A}\)</span> are obtained from regressing <span class="math inline">\(X_{A}\)</span> on <span class="math inline">\(X_{A^{c}}\)</span>.</p>
+<p><span class="math display">\[ \hat{E}_{A} = X_{A} - X_{A^{c}}(\hat{B}^{OLS}_{A})^{T} \]</span></p>
+<p>Also, the error sum of squares is an unbiased estimator of <span class="math inline">\(\Omega^{-1}_{A,A}\)</span>. So, an estimator of <span class="math inline">\(\Omega_{A,A}\)</span> can be obtained as follows</p>
+<p><span class="math display">\[ \hat{\Omega}_{A,A} = \left(\frac{1}{n} \hat{E}^{T}_{A} \hat{E}_{A} \right)^{-1} \]</span></p>
+<p>Therefore, our estimate of <span class="math inline">\(\tilde{X}\)</span> can be written as</p>
+<p><span class="math display">\[ \hat{\tilde{X}}_{A} = \hat{E}_{A} \hat{\Omega}_{A,A} \]</span></p>
+<p>In the ISEE paper, the authors take the index sets <span class="math inline">\(A\)</span> to be paired blocks, <span class="math inline">\(A_1 = (1,2)\)</span>, <span class="math inline">\(A_2 = (3,4)\)</span>, <span class="math inline">\(\cdots\)</span> , and then compute <span class="math inline">\(\hat{\tilde{X}}_{A_1}, \hat{\tilde{X}}_{A_2}, \cdots\)</span> and then aggregate them to get the overall <span class="math inline">\(\hat{\tilde{X}}\)</span>.</p>
+</div>
+<div id="adjustments" class="section level2">
+<h2>Adjustments</h2>
+<div id="isee-method" class="section level3">
+<h3>ISEE method</h3>
+<p>In the original ISEE paper, the shrinkage is performed in 2 steps - first instead of computing the OLS estimator <span class="math inline">\(\hat{B}^{OLS}_{A}\)</span> in the regression of <span class="math inline">\(X_A\)</span> onto <span class="math inline">\(X_{A^{c}}\)</span>, they perform a scaled LASSO regression (See Equation 12 of their paper).</p>
+<p>The second shrinkage step occurs after getting the estimator of <span class="math inline">\(\Omega\)</span> as follows</p>
+<p><span class="math display">\[ \hat{\Omega}_{ISEE,a} = \frac{1}{n} \hat{\tilde{X}}^{T} \hat{\tilde{X}} \]</span></p>
+<p>Then for a fixed threshold <span class="math inline">\(\tau\)</span> which is chosen empirically, the entries of the <span class="math inline">\(\hat{\Omega}_{ISEE,a}\)</span> are thresholded.</p>
+</div>
+<div id="pcorshrink-ols" class="section level3">
+<h3>pCorShrink + OLS</h3>
+<p>In the default version of <strong>pCorShrink</strong>, we do not perform any other shrinkage at any steps apart from the <em>CorShrink</em> shrinkage on the generated <span class="math inline">\(\hat{\tilde{X}}^{T}\)</span> values.</p>
+<p>Once <span class="math inline">\(\hat{\tilde{X}}\)</span> are obtained, we run <strong>CorShrinkData</strong> on these modified data and perform adaptive shrinkage on the correlation matrix <span class="math inline">\(R^{cor}\)</span> of <span class="math inline">\(\hat{\tilde{X}}\)</span>, which is effectively the correlation matrix of the <span class="math inline">\(\Omega\)</span> matrix.</p>
+<p><span class="math display">\[ R^{cor}_{ij} = \frac{\Omega_{ij}}{\sqrt{\Omega_{ii} \Omega_{jj}}} \]</span></p>
+<p>The actual <span class="math inline">\(R\)</span> - the partial correlation matrix - is simply the negative of this correlation matrix in the off-diagonal entries with <span class="math inline">\(1\)</span> on the diagonals.</p>
+</div>
+<div id="pcorshrink-glmnet" class="section level3">
+<h3>pCorShrink + glmnet</h3>
+<p>However, when the number of samples is smaller than the number of variables in the predictor set <span class="math inline">\(A^{c}\)</span>, which, since our (as well as ISEE paper’s) <span class="math inline">\(A\)</span> is of cardinality <span class="math inline">\(2\)</span>, is same as saying if <span class="math inline">\(N &lt; P-2\)</span>, then the regression model by OLS method fails to give an unique solution, as the model matrix is no longer of full column rank.</p>
+<p>In this case, we propose to use a cross-validated Elastic net shrinkage (<em>cv.glmnet</em> in the <strong>glmnet</strong> package) with tuning parameter <span class="math inline">\(\alpha\)</span> chosen between <span class="math inline">\(0\)</span> and <span class="math inline">\(1\)</span>, where <span class="math inline">\(0\)</span> corresponds to ridge regression and <span class="math inline">\(1\)</span> corresponds to LASSO. From practical examples, I have not seen much difference between the LASSO and the scaled LASSO approach of the ISEE paper. However, the main reason we do not use the scaled LASSO is because the code is not available and the compiled code does not run on Mac machines. Also, the LASSO and Ridge regression penalties are more common for regression modeling.</p>
+<p>The rest of the steps are same as the <em>pCorShrink + OLS</em> approach.</p>
+</div>
+</div>
+
+<hr>
+<p>
+    This <a href="http://rmarkdown.rstudio.com">R Markdown</a> site was created with <a href="https://github.com/jdblischak/workflowr">workflowr</a>
+</p>
+<hr>
+
+<!-- To enable disqus, uncomment the section below and provide your disqus_shortname -->
+
+<!-- disqus
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'rmarkdown'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+-->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

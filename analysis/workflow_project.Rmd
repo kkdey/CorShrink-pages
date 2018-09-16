@@ -1,0 +1,102 @@
+---
+title: ""
+output:
+  html_document:
+    toc: false
+---
+
+
+# Codes to reproduce analysis from Dey and Stephens (2018+)
+
+
+Here are the analysis RmD files for reproducing the figures from our [paper]().
+To run these scripts, first clone the source directory
+
+```
+git clone https://github.com/kkdey/CorShrink-pages.git
+```
+
+Then go to the `analysis` directory
+
+```
+cd CorShrink-pages/analysis
+```
+
+The paths of the data files in the scripts below (under Figures and 
+Supplementary Figures) are relative to this directory.
+
+
+**Figures** : 
+
+- [Figure 1:  CorShrink on PLIN1 gene expression data](PLIN1_analysis.html)
+
+- [Figure 2:  CorShrink on expression data from other genes](other_genes_CorShrink.html)
+
+- [Figure 3:  FLASH and softImpute imputation on PLIN1 gene expression](CorShrink_softimpute.html)
+
+- [Figure 4:  Correlation Matrix Distance (CMD) comparison of CorShrink with other methods on different simulation designs](boxplot_methods_simulation.html)
+
+- [Figure 5:  Eigenvalue trends comparison of CorShrink with other methods on different simulation designs  ](sqrt_eigenvalues_trends.html)
+
+- [Figure 6:  Corshrink on word2vec similarity estimates from Ebony magazine 1968 issues](corshrink_word2vec_Ebony_1968.html)
+
+
+**Supplementary Figures** :
+
+- [Supplementary Figure 1: CorShrink with different shrinkage priors](PLIN1_analysis_alt.html)
+
+- [Supplementary Figure 2: Tissue pair and gene-based CorShrink](genewide_tissuewide_CorShrink.html)
+
+- [Supplementary Figure 3: Frobenius distance comparison of CorShrink with other methods on different simulation designs](boxplot_methods_simulation_Frobenius.html)
+
+- [Supplementary Figure 4: Frobenius distance comparison of pCorShrink, CLIME, ISEE and GLASSO](compare_clime_pcorshrink_glasso_isee.html)
+
+- [Supplementary Figure 5: Frobenius distance comparison of partial correlations from CorShrink and other methods on different simulation designs](boxplot_methods_simulation_pcor.html)
+
+- [Simulation comparson of FLASH and CorShrink with missing data](flash_corshrink_missing_data_sim.html)
+
+
+# Additional analyses
+
+## CorShrink
+
+We review additional methods and analysis RmD files that did not make it to the final draft of the paper.
+
+* [A Brief Literature Review of Correlation shrinkage](literature_review.html)
+
+* [Simulation settings for testing CorShrink](simulated_matrices.html)
+    + [Example study 1 : banded structure](corshrink_nonsparse_sparse_1.html)
+    + [Example study 2 : banded structure](corshrink_nonsparse_sparse_2.html)
+    + [Example study 3 : banded structure](corshrink_sparse_nonsparse_1.html)
+    + [Example study 4 : banded structure](corshrink_sparse_nonsparse_2.html)
+    + [Example study 5 : alternate banded structure](corshrink_alternate_bands.html)
+    + [Example study 6 : similar banded structure](corshrink_similar_bands.html)
+    + [Example study 7 : Toeplitz structure](corshrink_toeplitz.html)
+    + [Example study 8 : Hub structure](corshrink_hub.html)
+    + [Example study 9 : Hub structure](corshrink_hub_2.html)
+    + [Example study 10 : Diagonal covariance matrix-DSC](corshrink_dsc_diagonal.html)
+    + [Example study 11 : Toeplitz covariance matrix-DSC](corshrink_dsc_toeplitz.html)
+    + [Example study 12 : Graph based covariance matrix-DSC](corshrink_dsc_graph.html)
+    
+
+* [Combined GLASSO and CorShrink for correlation/partial correlation estimation](glasso_corshrink_combine.html)
+
+* [Combined FLASH and CorShrink for correlation estimation](flash_corshrink_combine.html)
+
+## pCorShrink 
+
+- [Model Write up: Adaptive shrinkage of partial correlations](model_pcorshrink.html)
+- [Comparison of ISEE and pCorShrink : Banded precision matrix example 1](isee_pcorshrink_compare_banded_precision_1.html)
+- [Why ISEE for N > P? ::  Comparsion of ISEE and pCorShrink with standard method](isee_vs_standard.html)
+- [Frobenius norm comparisons of ISEE, pCorShrink and standard methods for N > P](isee_pcorshrink_standard_multiple_n_p_settings.html)
+- [Why ISEE for N < P? ::  Comparsion of ISEE and pCorShrink with standard method](isee_vs_standard_2.html)
+- [Frobenius norm comparisons of ISEE, pCorShrink and standard methods for N < P](isee_pcorshrink_standard_n_less_p_settings.html)
+- [Frobenius norm comparisons of ISEE, pCorShrink and standard methods for Hub, Toeplitz and Banded precision matrices](isee_pcorshrink_standard_compare.html)
+- [Testing pCorShrink and ISEE with CLIME](clime_testing.html)
+- [Illustration of Network analysis using ISEE, pCorShrink and GLASSO](network_illustration_pcorshrink_isee_glasso.html)
+- [Illustration of pCorShrink on Himalayan bird abundance data](ecostructure_pcorshrink.html)
+- [Illustration of pCorShrink on cellula signaling pathway data from Sachs and others (2005) ](cell_signaling_example.html)
+- [Illustration of pCorShrink on stock market price data from huge package](stockdata_example_pcorshrink.html)
+
+
+

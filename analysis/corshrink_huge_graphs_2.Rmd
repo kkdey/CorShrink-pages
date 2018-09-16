@@ -1,0 +1,342 @@
+---
+title: "CorShrink on *huge* graphs - Cluster network"
+author: "Kushal K Dey"
+date: "1/1/2018"
+output: html_document
+---
+
+This is one in a bunch of simulation examples of data possessing different graphical structures. we use the package **huge** to generate the different examples and then run GLASSO under various regularization parameter choices.
+
+```{r setup, include=FALSE}
+library(CorShrink)
+library(huge)
+library(corpcor)
+```
+
+
+## n=10, d = 200
+
+### Simulation
+
+```{r}
+library(huge) # Load the package huge
+L = huge.generator(n=10,d=200, graph="cluster") # Generate data with cluster structures
+X = L$data; X.pow = X^3/sqrt(15) # Power Transformation
+X.npn = huge.npn(X.pow) # Nonparanormal
+```
+
+```{r}
+col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+
+image(as.matrix(cov2cor(L$sigma)),
+      col=col, main=paste0("pop corr matrix"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+
+### Covariance estimation
+
+```{r}
+##  GLASSO
+
+out.npn = huge(X.npn, lambda = seq(0.98, 0.01, length.out = 100), method = "glasso", cov.output = TRUE)
+which.max(out.npn$loglik)
+est_icov <- out.npn$icov[[which.max(out.npn$loglik)]]
+est_cov <- out.npn$cov[[which.max(out.npn$loglik)]]
+
+## Shafer Strimmer 
+
+strimmer_sample <- corpcor::cor.shrink(out.npn$data)
+
+## CorShrink
+
+cov_sample_ML <-  CorShrinkData(out.npn$data, sd_boot = FALSE, optmethod = "mixEM",
+                     image.control = list(x.cex = 0.3, y.cex = 0.3),
+                     ash.control = list())
+
+```
+
+### Visualization
+
+GLASSO inverse correlation matrix.
+
+```{r}
+image(cov2cor(as.matrix(est_icov)),
+      col=col, main=paste0("GLASSO"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+All methods - covariance matrix 
+
+```{r}
+
+col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+
+par(mfrow = c(2,2))
+
+image(as.matrix(cor(out.npn$data)),
+      col=col, main=paste0("sample corr matrix"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(cov2cor(as.matrix(est_cov)),
+      col=col, main=paste0("GLASSO"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(strimmer_sample,
+      col=col, main=paste0("shafer strimmer"), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(as.matrix(cov_sample_ML$ash_cor_PD),
+      col=col, main=paste0("CorShrink"), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+
+
+## n=50, d = 200
+
+### Simulation
+
+```{r}
+library(huge) # Load the package huge
+L = huge.generator(n=50,d=200,graph="cluster") # Generate data with cluster structures
+X = L$data; X.pow = X^3/sqrt(15) # Power Transformation
+X.npn = huge.npn(X.pow) # Nonparanormal
+```
+
+```{r}
+col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+
+image(as.matrix(cov2cor(L$sigma)),
+      col=col, main=paste0("pop corr matrix"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+### Covariance estimation
+
+```{r}
+##  GLASSO
+
+out.npn = huge(X.npn, lambda = seq(0.98, 0.01, length.out = 100), method = "glasso", cov.output = TRUE)
+which.max(out.npn$loglik)
+est_icov <- out.npn$icov[[which.max(out.npn$loglik)]]
+est_cov <- out.npn$cov[[which.max(out.npn$loglik)]]
+
+## Shafer Strimmer 
+
+strimmer_sample <- corpcor::cor.shrink(out.npn$data)
+
+## CorShrink
+
+cov_sample_ML <-  CorShrinkData(out.npn$data, sd_boot = FALSE, optmethod = "mixEM",
+                     image.control = list(x.cex = 0.3, y.cex = 0.3))
+
+```
+
+### Visualization
+
+GLASSO inverse correlation matrix.
+
+```{r}
+image(cov2cor(as.matrix(est_icov)),
+      col=col, main=paste0("GLASSO"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+All methods - covariance matrix 
+
+```{r}
+
+col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+
+par(mfrow = c(2,2))
+
+image(as.matrix(cor(out.npn$data)),
+      col=col, main=paste0("sample corr matrix"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(cov2cor(as.matrix(est_cov)),
+      col=col, main=paste0("GLASSO"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(strimmer_sample,
+      col=col, main=paste0("shafer strimmer"), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(as.matrix(cov_sample_ML$ash_cor_PD),
+      col=col, main=paste0("CorShrink"), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+
+## n=100, d = 200
+
+### Simulation
+
+```{r}
+library(huge) # Load the package huge
+L = huge.generator(n=50,d=200,graph="cluster") # Generate data with cluster structures
+X = L$data; X.pow = X^3/sqrt(15) # Power Transformation
+X.npn = huge.npn(X.pow) # Nonparanormal
+```
+
+```{r}
+col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+
+image(as.matrix(cov2cor(L$sigma)),
+      col=col, main=paste0("pop corr matrix"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+
+### Covariance estimation
+
+```{r}
+##  GLASSO
+
+out.npn = huge(X.npn, lambda = seq(0.98, 0.01, length.out = 100), method = "glasso", cov.output = TRUE)
+which.max(out.npn$loglik)
+est_icov <- out.npn$icov[[which.max(out.npn$loglik)]]
+est_cov <- out.npn$cov[[which.max(out.npn$loglik)]]
+
+## Shafer Strimmer 
+
+strimmer_sample <- corpcor::cor.shrink(out.npn$data)
+
+## CorShrink
+
+cov_sample_ML <-  CorShrinkData(out.npn$data, sd_boot = FALSE, optmethod = "mixEM",
+                     image.control = list(x.cex = 0.3, y.cex = 0.3))
+
+```
+
+### Visualization
+
+GLASSO inverse correlation matrix.
+
+```{r}
+image(cov2cor(as.matrix(est_icov)),
+      col=col, main=paste0("GLASSO"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+All methods - covariance matrix 
+
+```{r}
+
+col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+
+par(mfrow = c(2,2))
+
+image(as.matrix(cor(out.npn$data)),
+      col=col, main=paste0("sample corr matrix"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(cov2cor(as.matrix(est_cov)),
+      col=col, main=paste0("GLASSO"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(strimmer_sample,
+      col=col, main=paste0("shafer strimmer"), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(as.matrix(cov_sample_ML$ash_cor_PD),
+      col=col, main=paste0("CorShrink"), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+
+## n=200, d = 200
+
+### Simulation
+
+```{r}
+library(huge) # Load the package huge
+L = huge.generator(n=50,d=200,graph="cluster") # Generate data with cluster structures
+X = L$data; X.pow = X^3/sqrt(15) # Power Transformation
+X.npn = huge.npn(X.pow) # Nonparanormal
+```
+
+```{r}
+col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+
+image(as.matrix(cov2cor(L$sigma)),
+      col=col, main=paste0("pop corr matrix"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+
+### Covariance estimation
+
+```{r}
+##  GLASSO
+
+out.npn = huge(X.npn, lambda = seq(0.98, 0.01, length.out = 100), method = "glasso", cov.output = TRUE)
+which.max(out.npn$loglik)
+est_icov <- out.npn$icov[[which.max(out.npn$loglik)]]
+est_cov <- out.npn$cov[[which.max(out.npn$loglik)]]
+
+## Shafer Strimmer 
+
+strimmer_sample <- corpcor::cor.shrink(out.npn$data)
+
+## CorShrink
+
+cov_sample_ML <-  CorShrinkData(out.npn$data, sd_boot = FALSE, optmethod = "mixEM",
+                     image.control = list(x.cex = 0.3, y.cex = 0.3))
+
+```
+
+### Visualization
+
+GLASSO inverse correlation matrix.
+
+```{r}
+image(cov2cor(as.matrix(est_icov)),
+      col=col, main=paste0("GLASSO"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+All methods - covariance matrix 
+
+```{r}
+
+col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+
+par(mfrow = c(2,2))
+
+image(as.matrix(cor(out.npn$data)),
+      col=col, main=paste0("sample corr matrix"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(cov2cor(as.matrix(est_cov)),
+      col=col, main=paste0("GLASSO"), cex.main=1,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(strimmer_sample,
+      col=col, main=paste0("shafer strimmer"), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+image(as.matrix(cov_sample_ML$ash_cor_PD),
+      col=col, main=paste0("CorShrink"), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+
+

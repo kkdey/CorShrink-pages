@@ -1,0 +1,69 @@
+---
+title: "FLASH vs CorShrink missing data simulation"
+author: "Kushal K Dey"
+date: "9/15/2018"
+output: html_document
+---
+
+```{r}
+library(corrplot)
+```
+
+
+```{r}
+n <- 100
+p <- 25
+noise <- matrix(rnorm(n*p), nrow=n, ncol=p)
+Sigma <- matrix(0.04 * 0.8, nrow=p, ncol=p)
+diag(Sigma) <- 0.04 
+data <- cbind(noise, MASS::mvrnorm(n = n, mu = rep(0.5, p), Sigma = Sigma))
+```
+
+```{r}
+data_with_na <- apply(data, 2, function(x) { x[sample(1:100, 75)]=NA; return(x)})
+```
+
+```{r}
+library(flashr)
+```
+
+```{r}
+fl = flash(data_with_na)
+ldf = flash_get_ldf(fl)
+```
+
+```{r}
+data_new <- flash_fill(data_with_na, fl)
+```
+
+```{r fig.height=12, fig.width=12}
+cor_mat <- cor(flash_fill(data_with_na, fl), use = "pairwise.complete.obs")
+col2 <- c("blue", "white", "red")
+corrplot(cor_mat, diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = "td", tl.cex = 0.9, tl.col = "black",
+         rect.col = "white",na.label.col = "white",
+         method = "color", type = "upper") 
+```
+
+```{r fig.height=12, fig.width=12}
+cor_mat <- cor(data, use = "pairwise.complete.obs")
+col2 <- c("blue", "white", "red")
+corrplot(cor_mat, diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = "td", tl.cex = 0.9, tl.col = "black",
+         rect.col = "white",na.label.col = "white",
+         method = "color", type = "upper") 
+```
+```{r}
+out <- CorShrink::CorShrinkData(data_with_na, ash.control = list(mixcompdist = "normal"))
+```
+
+```{r fig.height=12, fig.width=12}
+col2 <- c("blue", "white", "red")
+corrplot(out$cor, diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = "td", tl.cex = 0.9, tl.col = "black",
+         rect.col = "white",na.label.col = "white",
+         method = "color", type = "upper") 
+```

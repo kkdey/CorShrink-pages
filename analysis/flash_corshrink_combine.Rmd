@@ -1,0 +1,151 @@
+---
+title: "Can we combine FLASH and CorShrink?"
+author: "Kushal K Dey"
+date: "5/23/2018"
+output: html_document
+---
+
+## Intro
+
+In this script, we investigate if for low rank correlation matrices with noise, if FLASH and CorShrink together does a better job than FLASH and CorShrink alone. 
+
+```{r message=FALSE, warning=FALSE}
+library(CorShrink)
+library(glasso)
+library(Matrix)
+library(pracma)
+library(corrplot)
+library(corpcor)
+library(flashr)
+```
+
+## Example Simulation 
+
+We simulate from a low rank hub correlation population structure model.
+
+```{r}
+
+rep.row<-function(x,n){
+   matrix(rep(x,each=n),nrow=n)
+}
+rep.col<-function(x,n){
+   matrix(rep(x,each=n), ncol=n, byrow=TRUE)
+}
+
+L <- rbind(rep.row(c(2, -2, 0, 1, 0), 100),
+           rep.row(c(0, 1, 3, 3, 0), 100),
+           rep.row(c(0, -1, 1, -1, 0), 100),
+           rep.row(c(0, 0, 1, 1, 0), 100),
+           rep.row(c(0, 0, 0, 0, 5), 100))
+F <- t(cbind(rnorm(200, 0, 1), rnorm(200, 0, 1), rnorm(200, 0, 1),
+           rnorm(200, 0, 1), rnorm(200, 0, 1)))
+
+E <- matrix(rnorm(dim(L)[1]*dim(F)[2], 0, 5), nrow = dim(L)[1])
+
+data = t(L%*%F + E)
+
+covSigma <- L %*% t(L) + diag(5, dim(L)[1])
+#covSigma <- t(F) %*% F 
+corSigma <- cov2cor(covSigma)
+pcorSigma <- cor2pcor(corSigma)
+
+
+S <- cov(data, method = "pearson")
+              
+```
+
+
+### true corSigma
+
+```{r}
+col2 <- c("blue", "white", "red")
+corrplot(corSigma, diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = "td", tl.cex = 0.2, tl.col = "black",
+         rect.col = "white",na.label.col = "white",
+         method = "color", type = "upper")
+```
+
+### true pcorSigma
+
+```{r}
+col2 <- c("blue", "white", "red")
+corrplot(pcorSigma, diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = "td", tl.cex = 0.2, tl.col = "black",
+         rect.col = "white",na.label.col = "white",
+         method = "color", type = "upper")
+```
+
+## S
+
+```{r}
+col2 <- c("blue", "white", "red")
+corrplot(cov2cor(S), diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = "td", tl.cex = 0.2, tl.col = "black",
+         rect.col = "white",na.label.col = "white",
+         method = "color", type = "upper")
+```
+
+## FLASH
+
+```{r}
+flash_out <- flash(data, Kmax = 100, tol = 0.001,
+                   var_type = "constant")
+```
+
+```{r}
+flash_project <- flash_out$EL%*%t(flash_out$EF)
+corrplot(cor(flash_project), diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = "td", tl.cex = 0.2, tl.col = "black",
+         rect.col = "white",na.label.col = "white",
+         method = "color", type = "upper")
+```
+
+## FLASH + CorShrink
+
+```{r}
+flash_corshrink <- CorShrink::CorShrinkData(flash_project,
+      ash.control = list(control=list(maxiter=1000)))
+normal_corshrink <- CorShrink::CorShrinkData(data,
+      ash.control = list(control=list(maxiter=1000)))
+```
+
+```{r}
+corrplot(flash_corshrink$cor, diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = "td", tl.cex = 0.2, tl.col = "black",
+         rect.col = "white",na.label.col = "white",
+         method = "color", type = "upper")
+```
+
+## CorShrink
+
+```{r}
+corrplot(normal_corshrink$cor, diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = "td", tl.cex = 0.2, tl.col = "black",
+         rect.col = "white",na.label.col = "white",
+         method = "color", type = "upper")
+```
+
+## corpcor
+
+```{r}
+normal_corpcor <- corpcor::cor.shrink(data)
+flash_corpcor <- corpcor::cor.shrink(flash_project)
+```
+
+## Measures 
+
+```{r}
+D <- dim(normal_corpcor)[1]
+mean(sqrt((as.matrix(normal_corshrink$cor) - as.matrix(corSigma))^2)) ## corshrink
+mean(sqrt((as.matrix(flash_corshrink$cor) - as.matrix(corSigma))^2)) ## flash + corshrink
+mean(sqrt((as.matrix(normal_corpcor[1:D,1:D]) - as.matrix(corSigma))^2)) ## corpcor
+mean(sqrt((as.matrix(flash_corpcor[1:D, 1:D]) - as.matrix(corSigma))^2)) ## flash + corpcor
+mean(sqrt((as.matrix(cor(flash_project)) - as.matrix(corSigma))^2)) ## flash
+```
+

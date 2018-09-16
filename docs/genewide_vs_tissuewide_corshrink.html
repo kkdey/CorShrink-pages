@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="Kushal K Dey" />
+
+
+<title>Genewide Corshrink vs Tissue wide CorShrink</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<script src="site_libs/navigation-1.1/codefolding.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+<link rel="stylesheet" href="cosmo.css" type="text/css" />
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("hide" === "show");
+});
+</script>
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:100,300,400,600" rel="stylesheet" type="text/css">
+    <link href="../docs/cosmo.css" rel="stylesheet">
+    <link href="../docs/cosmo.min.css" rel="stylesheet">
+</head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="../docs/bootstrap/js/bootstrap.min.js"></script>
+
+<body>
+
+<div class = "nav" align = "middle">
+<div class= "p1"></div>
+<p>
+  <a class="btn btn-large btn btn-primary" type="button" href = "index.html">CorShrink</a>
+  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow.html">HOME</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow_project.html">WORKFLOW</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "about.html">METHODS</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink">SOFTWARE</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "license.html">LICENSE</a>
+   &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink-pages">GITHUB</a>
+ </p>
+</div>
+<!-- <div class="nav">
+  <a href="index.html">Home page</a> &nbsp &nbsp
+  <a href="musings.html">Musings</a> &nbsp &nbsp
+  <a href="town.html">My town</a> &nbsp &nbsp
+  <a href="links.html">Links</a>
+</div> -->
+
+<!-- Main content -->
+</body>
+</html>
+
+<div class="fluid-row" id="header">
+
+<div class="btn-group pull-right">
+<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
+
+
+
+<h1 class="title toc-ignore">Genewide Corshrink vs Tissue wide CorShrink</h1>
+<h4 class="author"><em>Kushal K Dey</em></h4>
+<h4 class="date"><em>5/28/2017</em></h4>
+
+</div>
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#sample-correlation">Sample correlation</a></li>
+<li><a href="#tissue-wide-corshrink">Tissue wide CorShrink</a></li>
+<li><a href="#gene-wide-corshrink">Gene wide CorShrink</a></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>In this script, we present an example of how a genewide CorShrink output looks like in comparison with a tissue-wide CorShrink output.</p>
+<p><strong>Name of the gene (see code chunk on the side) </strong> :</p>
+<pre class="r"><code>name &lt;- &quot;ENSG00000172867&quot;</code></pre>
+<p>Load the tissue wide CorShrink and gene wide CorShrink estimated matrices, along with pairwise sample correlation matrix - generated from complete observations for each pair of tissues.</p>
+<pre class="r"><code>tissuewide_corshrink &lt;- get(load(&quot;../output/ash_cor_only_voom_pearson_halfuniform_gtex_tissues.rda&quot;))
+genewide_corshrink &lt;- get(load(&quot;../output/genewide_ash_out_tissue_mat.rda&quot;))
+cor_data &lt;- get(load(&quot;../output/cor_tissues_non_ash_voom_pearson.rda&quot;))</code></pre>
+<p>We check the dimensions, both will be <span class="math inline">\((53, 53, 16069)\)</span> corresponding to <span class="math inline">\(53\)</span> tissues and <span class="math inline">\(16069\)</span> genes.</p>
+<pre class="r"><code>dim(genewide_corshrink)</code></pre>
+<pre><code>## [1]    53    53 16069</code></pre>
+<pre class="r"><code>dim(tissuewide_corshrink)</code></pre>
+<pre><code>## [1]    53    53 16069</code></pre>
+<pre class="r"><code>common_samples &lt;- get(load(&quot;../output/common_samples.rda&quot;))
+
+gene_names &lt;- as.character(read.table(file = &quot;../data/GTEX_V6/gene_names_GTEX_V6.txt&quot;)[,1])
+gene_names_1 &lt;- as.character(sapply(gene_names, function(x) return(strsplit(x, &quot;[.]&quot;)[[1]][1])))
+ 
+person_label=read.table(&quot;../data/GTEX_V6/person_identifier_labels_with_numbers.txt&quot;);
+samples_id &lt;- read.table(file = &quot;../data/GTEX_V6/samples_id.txt&quot;)[,1]
+
+samples_person &lt;- sapply(samples_id, function(x) return(paste0(strsplit(as.character(x), &quot;-&quot;)[[1]][1:2], collapse =&quot;-&quot;)))
+tissue_labels &lt;- read.table(file = &quot;../data/GTEX_V6/samples_id.txt&quot;)[,3]
+
+unique_persons &lt;- unique(samples_person)
+unique_tissues &lt;- unique(tissue_labels)
+
+order_index &lt;- c();
+U &lt;- unique_tissues
+order_index &lt;- c(order_index, grep(&quot;Brain&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;fibroblast&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;EBV&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Spleen&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Whole Blood&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Muscle - Skeletal&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Liver&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Pancreas&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Stomach&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Kidney - Cortex&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Adrenal Gland&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Colon - Transverse&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Small Intestine - Terminal Ileum&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Heart - Atrial Appendage&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Heart - Left Ventricle&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Minor Salivary Gland&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Skin - Sun Exposed&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Skin - Not Sun Exposed&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Lung&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Ovary&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Thyroid&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Pituitary&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Testis&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Nerve - Tibial&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Breast - Mammary Tissue&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Adipose - Visceral&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Adipose - Subcutaneous&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Artery - Coronary&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Artery - Tibial&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Artery - Aorta&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Esophagus - Mucosa&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Vagina&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Cervix - Endocervix&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Esophagus - Gastroesophageal Junction&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Colon - Sigmoid&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Esophagus - Muscularis&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Cervix - Ectocervix&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Fallopian&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Prostate&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Uterus&quot;, U))
+order_index &lt;- c(order_index, grep(&quot;Bladder&quot;, U))</code></pre>
+</div>
+<div id="sample-correlation" class="section level2">
+<h2>Sample correlation</h2>
+<p>First the sample correlation</p>
+<pre class="r"><code>numg &lt;- grep(name, gene_names_1)
+cor_mat &lt;- diag(1,53)+cor_data[,,numg]
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cor_mat)[order_index, order_index],
+      col=col, main=paste0(&quot;cor mat:&quot;, name), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+axis(1, at = seq(0, 1, length.out = ncol(cor_mat)), labels = U[order_index], las=2, cex.axis = 0.4)
+axis(2, at = seq(0, 1, length.out = ncol(cor_mat)), labels = U[order_index], las=2, cex.axis = 0.4)</code></pre>
+<p><img src="genewide_vs_tissuewide_corshrink_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+</div>
+<div id="tissue-wide-corshrink" class="section level2">
+<h2>Tissue wide CorShrink</h2>
+<p>Next the tissuewide corshrink</p>
+<pre class="r"><code>numg &lt;- grep(name, gene_names_1)
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(tissuewide_corshrink[order_index, order_index, numg],
+      col=col, main=paste0(&quot;cor mat:&quot;, name), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+axis(1, at = seq(0, 1, length.out = ncol(cor_mat)), labels = U[order_index], las=2, cex.axis = 0.4)
+axis(2, at = seq(0, 1, length.out = ncol(cor_mat)), labels = U[order_index], las=2, cex.axis = 0.4)</code></pre>
+<p><img src="genewide_vs_tissuewide_corshrink_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+</div>
+<div id="gene-wide-corshrink" class="section level2">
+<h2>Gene wide CorShrink</h2>
+<p>Next the genewide corshrink</p>
+<pre class="r"><code>numg &lt;- grep(name, gene_names_1)
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(genewide_corshrink[order_index, order_index, numg],
+      col=col, main=paste0(&quot;cor mat:&quot;, name), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+axis(1, at = seq(0, 1, length.out = ncol(cor_mat)), labels = U[order_index], las=2, cex.axis = 0.4)
+axis(2, at = seq(0, 1, length.out = ncol(cor_mat)), labels = U[order_index], las=2, cex.axis = 0.4)</code></pre>
+<p><img src="genewide_vs_tissuewide_corshrink_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+</div>
+
+<hr>
+<p>
+    This <a href="http://rmarkdown.rstudio.com">R Markdown</a> site was created with <a href="https://github.com/jdblischak/workflowr">workflowr</a>
+</p>
+<hr>
+
+<!-- To enable disqus, uncomment the section below and provide your disqus_shortname -->
+
+<!-- disqus
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'rmarkdown'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+-->
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

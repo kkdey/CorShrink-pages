@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Kushal K Dey" />
+
+
+<title>word2vec + CorShrink on Ebony 1968 data</title>
+
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+<link rel="stylesheet" href="cosmo.css" type="text/css" />
+
+</head>
+
+<body>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:100,300,400,600" rel="stylesheet" type="text/css">
+    <link href="../docs/cosmo.css" rel="stylesheet">
+    <link href="../docs/cosmo.min.css" rel="stylesheet">
+</head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="../docs/bootstrap/js/bootstrap.min.js"></script>
+
+<body>
+
+<div class = "nav" align = "middle">
+<div class= "p1"></div>
+<p>
+  <a class="btn btn-large btn btn-primary" type="button" href = "index.html">CorShrink</a>
+  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+  <a class="btn btn-large btn btn-primary" type="button" href = "demo.html">DEMO</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow_project.html">WORKFLOW</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink">R PACKAGE</a>
+ </p>
+</div>
+<!-- <div class="nav">
+  <a href="index.html">Home page</a> &nbsp &nbsp
+  <a href="musings.html">Musings</a> &nbsp &nbsp
+  <a href="town.html">My town</a> &nbsp &nbsp
+  <a href="links.html">Links</a>
+</div> -->
+
+<!-- Main content -->
+</body>
+</html>
+
+
+<h1 class="title toc-ignore">word2vec + CorShrink on Ebony 1968 data</h1>
+<h4 class="author"><em>Kushal K Dey</em></h4>
+<h4 class="date"><em>3/4/2018</em></h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#martin-luther-king">Martin Luther King</a></li>
+<li><a href="#civil-rights">Civil rights</a></li>
+<li><a href="#vietnam">Vietnam</a></li>
+</ul>
+</div>
+
+<p>We look at CorShrink similarity measures and corresponding rankings of words and compare them with the empirical similarity and rankings without the <strong>CorShrink</strong> model. We pick four topic words to focus on - <em>martin luther king</em>, <em>civil rights</em>, <em>vietnam</em> and <em>kennedy</em>. These words corrspond to the most prominent events of the year - the Vietnam war, the end of the Civil rights movement and the assassination of Martin Luther King and Robert Kennedy.</p>
+<div id="martin-luther-king" class="section level2">
+<h2>Martin Luther King</h2>
+<pre class="r"><code>mat &lt;- get(load(&quot;../shared_output/word2vec_Ebony/martin_luther_king_corshrink.rda&quot;))
+cor_original &lt;- mat$original
+corshrink_mat &lt;- mat$corshrink</code></pre>
+<pre class="r"><code>word_frequencies_mat &lt;- get(load(&quot;../shared_output/word2vec_Ebony/word_frequencies.rda&quot;))
+word_presence_absence &lt;- word_frequencies_mat
+word_presence_absence[word_presence_absence &gt; 0] = 1</code></pre>
+<pre class="r"><code>matched_word_frequencies &lt;- word_presence_absence[, match(rownames(corshrink_mat), colnames(word_presence_absence))]</code></pre>
+<pre class="r"><code>num_occurrences_words &lt;- colSums(matched_word_frequencies)</code></pre>
+<pre class="r"><code>num_occurrence_matrix &lt;- sapply(num_occurrences_words, function(l) pmin(l, num_occurrences_words))</code></pre>
+<pre class="r"><code>word_pairs &lt;- combn(colnames(cor_original),2)</code></pre>
+<pre class="r"><code>df1 &lt;- data.frame(&quot;original&quot; = cor_original[lower.tri(cor_original)],
+                 &quot;corshrink&quot; = corshrink_mat[lower.tri(corshrink_mat)],
+                 &quot;nsamp&quot; = num_occurrence_matrix[lower.tri(num_occurrence_matrix)])
+colfunc &lt;- colorRampPalette(c(&quot;lightcyan&quot;, &quot;darkcyan&quot;))
+plot(df1$original, df1$corshrink, bg = 2, col = colfunc(12)[df1$nsamp], pch = 19, cex = 1, xlab = &quot;cosine similarity&quot;, ylab = &quot;corshrink similarity&quot;, ylim = c(0,1))
+abline(0,1)
+
+ids &lt;- which(df1$original &gt; 0.8)
+ids2 &lt;- order(df1$original - df1$corshrink, decreasing = TRUE)[1:20]
+terms &lt;- paste0(word_pairs[1,ids], &quot;:&quot;, word_pairs[2,ids])
+terms2 &lt;- paste0(word_pairs[1,ids2], &quot;:&quot;, word_pairs[2,ids2])
+text(df1$original[ids], df1$corshrink[ids], terms,cex = 0.5)</code></pre>
+<p><img src="corshrink_word2vec_Ebony_1968_files/figure-html/unnamed-chunk-7-1.png" width="480" /></p>
+<pre class="r"><code>df1 &lt;- data.frame(&quot;original&quot; = cor_original[lower.tri(cor_original)],
+                 &quot;corshrink&quot; = corshrink_mat[lower.tri(corshrink_mat)],
+                 &quot;nsamp&quot; = num_occurrence_matrix[lower.tri(num_occurrence_matrix)])
+colfunc &lt;- colorRampPalette(c(&quot;lightcyan&quot;, &quot;darkcyan&quot;))
+plot(df1$original, df1$corshrink, bg = 2, col = colfunc(12)[df1$nsamp], pch = 19, cex = 1, xlab = &quot;cosine similarity&quot;, ylab = &quot;corshrink similarity&quot;)
+abline(0,1)
+
+ids2 &lt;- order(df1$original - df1$corshrink, decreasing = TRUE)[1:20]
+terms2 &lt;- paste0(word_pairs[1,ids2], &quot;:&quot;, word_pairs[2,ids2])
+
+ids3 &lt;- which(df1$original &gt; 0.7 &amp; df1$corshrink &gt; 0.7)
+terms3 &lt;- paste0(word_pairs[1,ids3], &quot;:&quot;, word_pairs[2,ids3])
+
+text(df1$original[c(ids3, ids2[c(1, 2, 6, 8, 9, 13, 14, 18)])], 
+     df1$corshrink[c(ids3, ids2[c(1, 2, 6, 8, 9, 13, 14, 18)])], 
+     c(terms3, terms2[c(1, 2, 6, 8, 9, 13, 14, 18)]),
+     cex = 0.5)</code></pre>
+<p><img src="corshrink_word2vec_Ebony_1968_files/figure-html/unnamed-chunk-8-1.png" width="480" /></p>
+<pre class="r"><code>df1_sub &lt;- data.frame(&quot;original&quot; = apply(cor_original[c(&quot;martin&quot;, &quot;luther&quot;, &quot;king&quot;),], 2, mean),
+                 &quot;corshrink&quot; = apply(corshrink_mat[c(&quot;martin&quot;, &quot;luther&quot;, &quot;king&quot;),], 2, mean),
+                 &quot;nsamp&quot; = apply(num_occurrence_matrix[, c(&quot;martin&quot;, &quot;luther&quot;, &quot;king&quot;)], 1, mean))
+colfunc &lt;- colorRampPalette(c(&quot;lightcyan&quot;, &quot;darkcyan&quot;))
+plot(df1_sub$original, df1_sub$corshrink, bg = 2, col = colfunc(12)[df1_sub$nsamp], pch = 19, cex = 1, xlab = &quot;cosine similarity&quot;, ylab = &quot;corshrink similarity&quot;)
+abline(0,1)</code></pre>
+<p><img src="corshrink_word2vec_Ebony_1968_files/figure-html/unnamed-chunk-9-1.png" width="480" /></p>
+<pre class="r"><code>sort(apply(cor_original[c(&quot;martin&quot;, &quot;luther&quot;, &quot;king&quot;),], 2, mean), decreasing = TRUE)[1:25]</code></pre>
+<pre><code>##        luther        martin          king           rev       apostle 
+##     0.8908471     0.8535049     0.8485832     0.4063000     0.3981613 
+##         floyd     requested         fiery  assassinated        murder 
+##     0.3509520     0.3498945     0.3463924     0.3427114     0.3375902 
+##       francis       funeral        forres          late         kings 
+##     0.3301637     0.3293240     0.3269475     0.3180746     0.3070072 
+##          joan        prince      caucuses     abernathy     preaching 
+##     0.3051331     0.3048364     0.2954050     0.2925116     0.2891073 
+##       marched       prophet       kennedy assassination         seeds 
+##     0.2868515     0.2835925     0.2812839     0.2809260     0.2785261</code></pre>
+<pre class="r"><code>sort(apply(corshrink_mat[c(&quot;martin&quot;, &quot;luther&quot;, &quot;king&quot;),], 2, mean), decreasing = TRUE)[1:25]</code></pre>
+<pre><code>##        luther        martin          king           rev       jackson 
+##    0.86047946    0.83742984    0.83344445    0.23006744    0.10901378 
+##        leader assassination         james         kings         ralph 
+##    0.09842106    0.09665314    0.09482433    0.09374696    0.09264236 
+##    montgomery     courtship          late    birmingham        murder 
+##    0.09258621    0.09234065    0.09025221    0.09022915    0.08954815 
+##         civil         peace      actively        wright      personal 
+##    0.08924835    0.08922241    0.08921495    0.08874579    0.08867831 
+##        rights         naacp           god         voice       marched 
+##    0.08789465    0.08683455    0.08661692    0.08588993    0.08563276</code></pre>
+</div>
+<div id="civil-rights" class="section level2">
+<h2>Civil rights</h2>
+<pre class="r"><code>mat &lt;- get(load(&quot;../shared_output/word2vec_Ebony/civil_rights_corshrink.rda&quot;))
+cor_original &lt;- mat$original
+corshrink_mat &lt;- mat$corshrink</code></pre>
+<pre class="r"><code>word_frequencies_mat &lt;- get(load(&quot;../shared_output/word2vec_Ebony/word_frequencies.rda&quot;))
+word_presence_absence &lt;- word_frequencies_mat
+word_presence_absence[word_presence_absence &gt; 0] = 1</code></pre>
+<pre class="r"><code>matched_word_frequencies &lt;- word_presence_absence[, match(rownames(corshrink_mat), colnames(word_presence_absence))]</code></pre>
+<pre class="r"><code>num_occurrences_words &lt;- colSums(matched_word_frequencies)</code></pre>
+<pre class="r"><code>num_occurrence_matrix &lt;- sapply(num_occurrences_words, function(l) pmin(l, num_occurrences_words))</code></pre>
+<pre class="r"><code>word_pairs_2 &lt;- combn(colnames(cor_original),2)</code></pre>
+<pre class="r"><code>df2 &lt;- data.frame(&quot;original&quot; = cor_original[lower.tri(cor_original)],
+                 &quot;corshrink&quot; = corshrink_mat[lower.tri(corshrink_mat)],
+                 &quot;nsamp&quot; = num_occurrence_matrix[lower.tri(num_occurrence_matrix)])
+colfunc &lt;- colorRampPalette(c(&quot;lightcyan&quot;, &quot;darkcyan&quot;))
+plot(df2$original, df2$corshrink, bg = 2, col = colfunc(12)[df2$nsamp], pch = 19, cex = 1, xlab = &quot;cosine similarity&quot;, ylab = &quot;corshrink similarity&quot;)
+abline(0,1)
+
+ids &lt;- which(df2$original &gt; 0.8)
+terms &lt;- paste0(word_pairs_2[1,ids], &quot;:&quot;, word_pairs_2[2,ids])
+text(df2$original[ids], df2$corshrink[ids], terms,cex = 0.5)</code></pre>
+<p><img src="corshrink_word2vec_Ebony_1968_files/figure-html/unnamed-chunk-17-1.png" width="480" /></p>
+<pre class="r"><code>df2_sub &lt;- data.frame(&quot;original&quot; = apply(cor_original[c(&quot;civil&quot;, &quot;rights&quot;),], 2, mean),
+                 &quot;corshrink&quot; = apply(corshrink_mat[c(&quot;civil&quot;, &quot;rights&quot;),], 2, mean),
+                 &quot;nsamp&quot; = apply(num_occurrence_matrix[, c(&quot;civil&quot;, &quot;rights&quot;)], 1, mean))
+colfunc &lt;- colorRampPalette(c(&quot;lightcyan&quot;, &quot;darkcyan&quot;))
+plot(df2_sub$original, df2_sub$corshrink, bg = 2, col = colfunc(12)[df2_sub$nsamp], pch = 19, cex = 1, xlab = &quot;cosine similarity&quot;, ylab = &quot;corshrink similarity&quot;)
+abline(0,1)</code></pre>
+<p><img src="corshrink_word2vec_Ebony_1968_files/figure-html/unnamed-chunk-18-1.png" width="480" /></p>
+<pre class="r"><code>sort(apply(cor_original[c(&quot;civil&quot;, &quot;rights&quot;),], 2, mean), decreasing = TRUE)[1:25]</code></pre>
+<pre><code>##           civil          rights        movement     legislation 
+##       0.9007841       0.9007841       0.4405455       0.3730043 
+##       disorders           bills     enforcement       movements 
+##       0.3550964       0.3421801       0.3402390       0.3323286 
+##    strengthened     involvement           equal      protection 
+##       0.3269478       0.3155524       0.3120888       0.3120654 
+##  reconstruction        belonged         cowboys          andrew 
+##       0.3117899       0.3022773       0.2964739       0.2961406 
+##        randolph      amendments         murders      commission 
+##       0.2911620       0.2899793       0.2860052       0.2846442 
+##      nonviolent recommendations          brutal            sncc 
+##       0.2844914       0.2823338       0.2760409       0.2733980 
+##         paradox 
+##       0.2722072</code></pre>
+<pre class="r"><code>sort(apply(corshrink_mat[c(&quot;civil&quot;, &quot;rights&quot;),], 2, mean), decreasing = TRUE)[1:25]</code></pre>
+<pre><code>##         civil        rights      movement         equal      militant 
+##    0.90078411    0.90078411    0.28434679    0.11712699    0.11265973 
+##    commission           war       freedom     committee   involvement 
+##    0.11157274    0.10768549    0.10677891    0.10644511    0.10586616 
+##        luther      equality    principles        became         human 
+##    0.10202443    0.10028706    0.09897363    0.09890537    0.09883332 
+## complications       georgia  constitution   nonviolence   legislation 
+##    0.09716990    0.09696635    0.09610843    0.09607732    0.09593372 
+##        voting       workers   integration     political           law 
+##    0.09576468    0.09572006    0.09560082    0.09551930    0.09485102</code></pre>
+</div>
+<div id="vietnam" class="section level2">
+<h2>Vietnam</h2>
+<pre class="r"><code>mat &lt;- get(load(&quot;../shared_output/word2vec_Ebony/vietnam_corshrink.rda&quot;))
+cor_original &lt;- mat$original
+corshrink_mat &lt;- mat$corshrink</code></pre>
+<pre class="r"><code>word_frequencies_mat &lt;- get(load(&quot;../shared_output/word2vec_Ebony/word_frequencies.rda&quot;))
+word_presence_absence &lt;- word_frequencies_mat
+word_presence_absence[word_presence_absence &gt; 0] = 1</code></pre>
+<pre class="r"><code>matched_word_frequencies &lt;- word_presence_absence[, match(rownames(corshrink_mat), colnames(word_presence_absence))]</code></pre>
+<pre class="r"><code>num_occurrences_words &lt;- colSums(matched_word_frequencies)</code></pre>
+<pre class="r"><code>num_occurrence_matrix &lt;- sapply(num_occurrences_words, function(l) pmin(l, num_occurrences_words))</code></pre>
+<pre class="r"><code>df3 &lt;- data.frame(&quot;original&quot; = cor_original[lower.tri(cor_original)],
+                 &quot;corshrink&quot; = corshrink_mat[lower.tri(corshrink_mat)],
+                 &quot;nsamp&quot; = num_occurrence_matrix[lower.tri(num_occurrence_matrix)])
+colfunc &lt;- colorRampPalette(c(&quot;lightcyan&quot;, &quot;darkcyan&quot;))
+plot(df3$original, df3$corshrink, bg = 2, col = colfunc(12)[df3$nsamp], pch = 19, cex = 1, xlab = &quot;cosine similarity&quot;, ylab = &quot;corshrink similarity&quot;)
+abline(0,1)</code></pre>
+<p><img src="corshrink_word2vec_Ebony_1968_files/figure-html/unnamed-chunk-25-1.png" width="480" /></p>
+<pre class="r"><code>df3_sub &lt;- data.frame(&quot;original&quot; = cor_original[c(&quot;vietnam&quot;),],
+                 &quot;corshrink&quot; = corshrink_mat[c(&quot;vietnam&quot;),], 
+                 &quot;nsamp&quot; = num_occurrence_matrix[,&quot;vietnam&quot;])
+colfunc &lt;- colorRampPalette(c(&quot;lightcyan&quot;, &quot;darkcyan&quot;))
+plot(df3_sub$original, df3_sub$corshrink, bg = 2, col = colfunc(12)[df3_sub$nsamp], pch = 19, cex = 1, xlab = &quot;cosine similarity&quot;, ylab = &quot;corshrink similarity&quot;)
+abline(0,1)</code></pre>
+<p><img src="corshrink_word2vec_Ebony_1968_files/figure-html/unnamed-chunk-26-1.png" width="480" /></p>
+<pre class="r"><code>sort(cor_original[&quot;vietnam&quot;,],  decreasing = TRUE)[1:25]</code></pre>
+<pre><code>##       vietnam           war       brigade       wounded        combat 
+##     1.0000000     0.4434992     0.3520040     0.3512938     0.3497281 
+##          duty          tour        ietnam correspondent      pentagon 
+##     0.3477188     0.3398961     0.3342478     0.3299423     0.3263955 
+##       veteran     returning         korea       jungles      infantry 
+##     0.3260021     0.3236263     0.3201537     0.3186872     0.3175398 
+##      veterans          vets     submarine         dying          here 
+##     0.3098152     0.3062246     0.3040134     0.3023057     0.2873125 
+##     battalion      soldiers       serving      mentally          stay 
+##     0.2867404     0.2843436     0.2791144     0.2781036     0.2767653</code></pre>
+<pre class="r"><code>sort(corshrink_mat[&quot;vietnam&quot;,], decreasing = TRUE)[1:25]</code></pre>
+<pre><code>##    vietnam        war       duty      korea       tour      south 
+## 1.00000000 0.35414001 0.21529770 0.17161943 0.16133289 0.15118126 
+##    serving  returning   soldiers       here     troops  disgusted 
+## 0.12550588 0.12432420 0.11590789 0.11558507 0.10679646 0.10576261 
+##   veterans       army   hospital      chest        men      after 
+## 0.10492706 0.10467981 0.10449188 0.10329116 0.10293328 0.10273593 
+##       keep   civilian    wounded       fort      tonys      eight 
+## 0.10258061 0.10140185 0.09982647 0.09898947 0.09858139 0.09825677 
+## vietnamese 
+## 0.09749280</code></pre>
+</div>
+
+<hr>
+<p>
+    This <a href="http://rmarkdown.rstudio.com">R Markdown</a> site was created with <a href="https://github.com/jdblischak/workflowr">workflowr</a>
+</p>
+<hr>
+
+<!-- To enable disqus, uncomment the section below and provide your disqus_shortname -->
+
+<!-- disqus
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'rmarkdown'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+-->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

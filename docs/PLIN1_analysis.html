@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Kushal K Dey" />
+
+
+<title>PLIN1 CorShrink analysis</title>
+
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+<link rel="stylesheet" href="cosmo.css" type="text/css" />
+
+</head>
+
+<body>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:100,300,400,600" rel="stylesheet" type="text/css">
+    <link href="../docs/cosmo.css" rel="stylesheet">
+    <link href="../docs/cosmo.min.css" rel="stylesheet">
+</head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="../docs/bootstrap/js/bootstrap.min.js"></script>
+
+<body>
+
+<div class = "nav" align = "middle">
+<div class= "p1"></div>
+<p>
+  <a class="btn btn-large btn btn-primary" type="button" href = "index.html">CorShrink</a>
+  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+  <a class="btn btn-large btn btn-primary" type="button" href = "demo.html">DEMO</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow_project.html">WORKFLOW</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink">R PACKAGE</a>
+ </p>
+</div>
+<!-- <div class="nav">
+  <a href="index.html">Home page</a> &nbsp &nbsp
+  <a href="musings.html">Musings</a> &nbsp &nbsp
+  <a href="town.html">My town</a> &nbsp &nbsp
+  <a href="links.html">Links</a>
+</div> -->
+
+<!-- Main content -->
+</body>
+</html>
+
+
+<h1 class="title toc-ignore">PLIN1 CorShrink analysis</h1>
+<h4 class="author"><em>Kushal K Dey</em></h4>
+<h4 class="date"><em>3/2/2018</em></h4>
+
+
+
+<p>We perform adaptive correlation shrinkage analysis using the <strong>CorShrink</strong> R package on the subject by tissue expression data for the PLIN1 gene.</p>
+<pre class="r"><code>library(CorShrink)
+library(corrplot)</code></pre>
+<pre><code>## corrplot 0.84 loaded</code></pre>
+<pre class="r"><code>library(gridExtra)
+library(ggplot2)
+library(ashr)</code></pre>
+<pre class="r"><code>data(&quot;sample_by_feature_data&quot;)</code></pre>
+<p>This data contains many NA values.We now run <strong>CorShrink</strong> on this data.</p>
+<pre class="r"><code>out &lt;- CorShrinkData(sample_by_feature_data, sd_boot = FALSE, image = &quot;null&quot;, 
+              ash.control = list(mixcompdist = &quot;halfuniform&quot;, control = list(maxiter = 1000)),                report_model = TRUE)</code></pre>
+<pre class="r"><code>order_index &lt;- get(load(&quot;../shared_output/order_index.rda&quot;))
+col2 &lt;- c(&quot;blue&quot;, &quot;white&quot;, &quot;red&quot;)
+corrplot(out$cor[order_index, order_index], diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = &quot;td&quot;, tl.cex = 0.9, tl.col = &quot;black&quot;,
+         rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,
+         method = &quot;color&quot;, type = &quot;upper&quot;) </code></pre>
+<p><img src="PLIN1_analysis_files/figure-html/unnamed-chunk-4-1.png" width="1152" /></p>
+<p>The empirical correlation matrix</p>
+<pre class="r"><code>cor_mat &lt;- cor(sample_by_feature_data, use = &quot;pairwise.complete.obs&quot;)
+corrplot(cor_mat[order_index, order_index], diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = &quot;td&quot;, tl.cex = 0.9, tl.col = &quot;black&quot;,
+         rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,
+         method = &quot;color&quot;, type = &quot;upper&quot;) </code></pre>
+<p><img src="PLIN1_analysis_files/figure-html/unnamed-chunk-5-1.png" width="1152" /></p>
+<pre class="r"><code>nsamp_mat &lt;- get(load(&quot;../shared_output/common_samples.rda&quot;))
+df &lt;- data.frame(&quot;original&quot; = cor_mat[lower.tri(cor_mat)],
+                 &quot;corshrink&quot; = out$cor[lower.tri(out$cor)],
+                 &quot;nsamp&quot; = nsamp_mat[lower.tri(nsamp_mat)])
+
+ggplot(df, aes(original, corshrink)) + geom_point(aes(colour = nsamp)) +
+scale_colour_gradient(low = &quot;lightcyan&quot;, high = &quot;darkcyan&quot;) + coord_fixed(ratio=1) + xlim(-0.5, 1) + ylim(-0.5, 1)</code></pre>
+<p><img src="PLIN1_analysis_files/figure-html/unnamed-chunk-6-1.png" width="480" /></p>
+<pre class="r"><code>nsamp_mat &lt;- get(load(&quot;../shared_output/common_samples.rda&quot;))
+df &lt;- data.frame(&quot;original&quot; = log((1+cor_mat[lower.tri(cor_mat)])/(1-cor_mat[lower.tri(cor_mat)])),
+                 &quot;corshrink&quot; = log((1+out$cor[lower.tri(out$cor)])/(1-out$cor[lower.tri(out$cor)])),
+                 &quot;nsamp&quot; = nsamp_mat[lower.tri(nsamp_mat)])
+
+ggplot(df, aes(original, corshrink)) + geom_point(aes(colour = nsamp)) +
+scale_colour_gradient(low = &quot;lightcyan&quot;, high = &quot;darkcyan&quot;) + coord_fixed(ratio=1) + xlim(-0.5, 1) + ylim(-0.5, 1)</code></pre>
+<p><img src="PLIN1_analysis_files/figure-html/unnamed-chunk-7-1.png" width="480" /></p>
+<p>The density plot of the estimated <span class="math inline">\(g\)</span> from te <strong>CorShrink</strong> model.</p>
+<pre class="r"><code>phalfuniform &lt;- function(x){
+  df &lt;- cbind(out$model$fitted_g$a, out$model$fitted_g$b)
+  z &lt;- sum(out$model$fitted_g$pi[-1] * apply(df[-1,], 1, function(y) return (punif(x, y[1], y[2]))))
+  if(x &gt;= 0){
+     z &lt;- z + out$model$fitted_g$pi[1]
+  }
+  return(z)
+}
+
+dhalfuniform &lt;- function(x){
+  df &lt;- cbind(out$model$fitted_g$a, out$model$fitted_g$b)
+  z &lt;- sum(out$model$fitted_g$pi[-1] * apply(df[-1,], 1, function(y) return (dunif(x, y[1], y[2]))))
+  return(z)
+}</code></pre>
+<pre class="r"><code>xout &lt;- sort(c(0, seq(-1,1, length.out = 10000)))</code></pre>
+<pre class="r"><code>pdf_vals_2 &lt;- sapply(xout, function(x) return(dhalfuniform(x)))
+plot(xout, pdf_vals_2, type = &quot;l&quot;, col = &quot;red&quot;, xlab = &quot;values&quot;, ylab = &quot;pdf&quot;, cex.axis = 1, cex.lab = 1.5, ylim = c(0, 3))
+abline(v=0, col = &quot;black&quot;, lty = 5)</code></pre>
+<p><img src="PLIN1_analysis_files/figure-html/unnamed-chunk-10-1.png" width="384" /></p>
+<pre class="r"><code>cdf_vals_2 &lt;- sapply(xout, function(x) return(phalfuniform(x)))
+plot(xout, cdf_vals_2, type = &quot;l&quot;, col = &quot;red&quot;, xlab = &quot;values&quot;, ylab = &quot;cdf&quot;, cex.axis = 1,
+     cex.lab = 1.5)</code></pre>
+<p><img src="PLIN1_analysis_files/figure-html/unnamed-chunk-11-1.png" width="384" /></p>
+
+<hr>
+<p>
+    This <a href="http://rmarkdown.rstudio.com">R Markdown</a> site was created with <a href="https://github.com/jdblischak/workflowr">workflowr</a>
+</p>
+<hr>
+
+<!-- To enable disqus, uncomment the section below and provide your disqus_shortname -->
+
+<!-- disqus
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'rmarkdown'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+-->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,71 @@
+---
+title: 'Literature Review : Correlation Shrinkage'
+author: "Kushal K Dey"
+date: "5/24/2017"
+output: 
+  html_document:
+    theme : cosmo
+    code_folding: hide
+---
+
+In this script, we review some of the methods for correlation shrinkage with or 
+without missing data that may form the references for the CorShrink paper.
+
+
+## THRESHOLDING ESTIMATORS
+
+[Bickel and Levina](https://projecteuclid.org/euclid.aos/1231165180) [Bickel and Levina](https://projecteuclid.org/euclid.aos/1201877299) propose hard thresholded and [Rothman et al 2010](https://academic.oup.com/biomet/article/97/3/539/243532/A-new-approach-to-Cholesky-based-covariance) propose soft thresholding estimators of sample covariance matrix. 
+
+Bickel and Levina show that their estimator consistent in the operator norm as long as the true covariance matrix is sparse in a suitable sense, the variables are Gaussian or sub-Gaussian, and $(\log p)/n \rightarrow 0$. They also evaluate the rates of convergence of their thresholded estimate to $\Sigma$ under the above assumptions.
+
+Their claim - \textit{Usual shrinkage estimators shrink the overdispersed sample covariance eigenvalues, but they do not change the eigenvectors, which are also inconsistent and do not result in sparse estimators}. They provide various arguments to show that convergence in the operator norm implies convergence of eigenvalues and eigenvectors.
+
+We use the package *CVTuningCov* for applying hard and soft thresholding estimators
+on the tissue tissue correlation matrix and compare that with CorShrink. Expectedly, the same thresholding for all correlation cells does not work in this case because of the underlying variation in the number of samples on which the correlation is calculated. 
+
+
+Rothman has his own package for performing the soft thresholding above 
+called  **PDSCE**. This implementation is more flexible compared to the *CVTuningCov* one but it still has problems with shrinkage, especially in shrinking the negative correlations.
+
+## LASSO TYPE SPARSE ESTIMATION
+
+GLASSO has been used for precision matrix estimation mainly, but GLASSO also provides
+an estimator for the covariance matrix. However, GLASSO is more specific to finding
+sparse precision structure.
+
+[Bien and Tibshirani (2010)](http://faculty.bscb.cornell.edu/~bien/papers/biometrika2011spcov.pdf) looks into how a LASSO type shrinkage approach can be used for covariance shrinkage. It is more like having a focused GLASSO type optimization scheme for generating sparse covariance matrices.
+
+The authors have a *spcov* R package for performing this shrinkage of 
+covariance matrix. The good thing is the package provides a matrix scale $P$ to shrink each term of the correlation separately. We try various choices of $P$ - uniform scale for all off-diagonal elements, the sd scale for sample correlation under normal
+assumption, scale by $1/(number of samples on which correlation is computed)$,
+scale by $exp(1/(number of samples on which correlation is computed))$.
+
+We find that the performance is better than softimpute + GLASSO, or 
+softimpute + Shafer Strimmer. But still there are scaling issues with this method.
+However this can be considered the closest competitor to CorShrink. Also it is slower than CorShrink in estimation.
+
+## DONOHO - OPTIMAL SHRINKAGE OF EIGENVALUES
+
+Another way of dealing with correlation shrinkage is to do something like a Factor Analysis. We tried FLASH (Wei and Stephens) and PCA. [Donoho and Gavish](https://arxiv.org/abs/1405.7511) proposed an optimal shrinkage of the singular values using three types of norms, that would reduce the dimensionality of the data but not be a hard thresholding redution. These are all methods to build a lower rank factorization of the patterns. However, from applying FLASH and PCA, we have realized that there are very subtle details in many genes, that are not captured by the 15-20 factors we fit. 
+
+
+## MISSING VALUE CORRELATION SHRINKAGE
+
+Wang et al (2013) talks about imputation methods in microarray experiments and 
+different sophisticated methods of imputation. But they do not talk about correlation structure. However these imputation methods can be used along with softImpute. 
+My general feeling is it would not do any better.
+
+Some correlation shrinkage based methods under the presence of missing values come from Minami and Shimuzu 1998, who did MLE and RMLE etimation to get estimates of common correlation under missing data. But their solutions are computationally hard to find as they did not give an explicit solution. A partial correlation shrinkage was performed using imputation by Angelo et al in 2012, she considers the missing data to be missing at random but could be non-monotonic. In finance, people have investigated a scenario of a monotone missing scheme with missing values patterns occurring completely at random in Hyodo et al 2013. I think the CorShrink approach is more generic to these methods. 
+
+It is easy to implement compared to Minami and Shimuzu 1998, has lesser assumtions compared to Hyodo et al 2013. 
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,275 @@
+---
+title: 'Eigenvalues distribution: CorShrink, corpcor, glasso, S'
+author: "Kushal K Dey"
+date: "2/23/2018"
+output: html_document
+---
+
+We compare the eigenvalue distribution of various correlation estimation methods with the
+corresponding population eigenvalue distributions.
+
+```{r}
+library(gridExtra)
+library(ggplot2)
+library(Matrix)
+library(psych)
+library(corpcor)
+library(CorShrink)
+library(glasso)
+```
+
+## Hub correlation
+
+```{r}
+gg <- list()
+
+num_samp <- c(10, 50, 100, 1000)
+block <- 10
+mat <- 0.3*diag(1,block) + 0.7*rep(1,block) %*% t(rep(1, block))
+Sigma <-   bdiag(mat, mat, mat, mat, mat, mat, mat, mat, mat, mat)
+corSigma <- cov2cor(Sigma)
+
+for(num_iter in 1:length(num_samp)){
+  n <- num_samp[num_iter]
+  P <- 100
+  data <- MASS::mvrnorm(n,rep(0,P),corSigma)
+  S <- cov(data)
+
+
+  ###  GLASSO
+
+  nr  <- 100
+  rho <- seq(0.1,10,length=nr)
+  bic <- rho
+  for(j in 1:nr){
+    a       <- glasso::glasso(S,rho[j])
+    p_off_d <- sum(a$wi!=0 & col(S)<row(S))
+    bic[j]  <- -2*(a$loglik) + p_off_d*log(n)
+  }
+  best <- which.min(bic)
+
+  a <- glasso::glasso(S,rho[best])
+  glasso_cor <- cov2cor(a$w)
+
+  ### Strimmer Shafer
+
+  strimmer_sample <- corpcor::cor.shrink(data)
+
+
+  ### CorShrink
+
+  cov_sample_ML <-  CorShrinkData(data, sd_boot = FALSE,
+                                  image = "null",
+                                  ash.control = list())
+
+  num <- 20
+  eigs.df <- data.frame ("x" = rep(1:num, 5),
+                         "y" = c(eigen(cov2cor(S))$values[1:num], eigen(strimmer_sample)$values[1:num],
+                                 eigen(glasso_cor)$values[1:num], eigen(cov_sample_ML$ash_cor_PD)$values[1:num],
+                                 eigen(corSigma)$values[1:num]),
+                         "color" = c(rep("empirical", num), rep("strimmer",  num), rep("glasso", num),
+                                     rep("corshrink", num), rep("true", num)),
+                         "type" = c(rep("A", 4*num), rep("B", num)))
+
+
+  p <- ggplot(eigs.df, aes(x=x, y=y, colour=color, linetype = color)) + geom_line(lty = 1, lwd = 0.7) +
+    scale_linetype_manual(values = c(rep("solid", 4), rep("dashed", 1))) +
+    scale_colour_manual(values=c("#000000", "blue", "green", "gold",
+                                 "red", "#0072B2", "#CC79A7", "#F0E442")) +
+    theme_bw() + theme(legend.position="none") + 
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) 
+  gg[[num_iter]] <- p
+  cat("We are at iteration", num_iter, "\n")
+}
+
+
+grid.arrange(gg[[1]], gg[[2]], gg[[3]], gg[[4]], nrow = 2, ncol = 2)
+
+
+```
+
+## Toeplitz correlation
+
+```{r}
+DM_toeplitz = function(n,P){
+  library("MASS")
+  index1=sort(sample(seq(1:n),(n/2)))
+  index2=seq(1:n)[-index1]
+  Sigmatp=function(P){
+    a=array(0,dim=c(P,P))
+    for(i in 1:P){
+      for(j in 1:P){
+        a[i,j]=max(1-0.1*(abs(i-j)),0)
+      }
+    }
+    return(a)
+  }
+  Sigma = Sigmatp(P)
+  data = mvrnorm(n,rep(0,P),Sigma)
+  Xtest = data[index2,]
+  Xtrain = data[index1,]
+  Omega = solve(Sigma)
+  return(list(Xtrain = Xtrain, Xtest = Xtest, Sigma = Sigma))
+}
+
+
+num_samp <- c(10, 50, 100, 1000)
+
+for(num_iter in 1:length(num_samp)){
+  n <- num_samp[num_iter]
+  P <- 100
+
+
+  ll <- DM_toeplitz(n=n, P=P)
+  data <- rbind(ll$Xtrain, ll$Xtest)
+  Sigma <- ll$Sigma
+  corSigma <- cov2cor(Sigma)
+
+  S <- cov2cor(cov(data))
+
+  ###  GLASSO
+
+  nr  <- 100
+  rho <- seq(0.1,10,length=nr)
+  bic <- rho
+  for(j in 1:nr){
+    a       <- glasso::glasso(S,rho[j])
+    p_off_d <- sum(a$wi!=0 & col(S)<row(S))
+    bic[j]  <- -2*(a$loglik) + p_off_d*log(n)
+  }
+  best <- which.min(bic)
+
+  a <- glasso::glasso(S,rho[best])
+  glasso_cor <- cov2cor(a$w)
+
+  ### Strimmer Shafer
+
+  strimmer_sample <- corpcor::cor.shrink(data)
+
+
+  ### CorShrink
+
+  cov_sample_ML <-  CorShrinkData(data, sd_boot = FALSE, 
+                                  image = "null",
+                                  ash.control = list())
+
+  num <- 20
+  eigs.df <- data.frame ("x" = rep(1:num, 5),
+                         "y" = c(eigen(S)$values[1:num], eigen(strimmer_sample)$values[1:num],
+                                 eigen(glasso_cor)$values[1:num],   eigen(cov_sample_ML$ash_cor_PD)$values[1:num],
+                                 eigen(corSigma)$values[1:num]),
+                         "color" = c(rep("empirical", num), rep("strimmer",  num), rep("glasso", num),
+                                     rep("corshrink", num), rep("true", num)),
+                         "type" = c(rep("A", 4*num), rep("B", num)))
+
+
+   p <- ggplot(eigs.df, aes(x=x, y=y, colour=color, linetype = color)) + geom_line(lty = 1, lwd = 0.7) +
+    scale_linetype_manual(values = c(rep("solid", 4), rep("dashed", 1))) +
+    scale_colour_manual(values=c("#000000", "blue", "green", "gold",
+                                 "red", "#0072B2", "#CC79A7", "#F0E442")) +
+    theme_bw() + theme(legend.position="none") + 
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) 
+  gg[[(4+num_iter)]] <- p
+  cat("We are at iteration", num_iter, "\n")
+}
+
+
+grid.arrange(gg[[5]], gg[[6]], gg[[7]], gg[[8]], nrow = 2, ncol = 2)
+
+```
+
+## Banded precision
+
+```{r}
+num_samp <- c(10,  50, 100, 1000)
+
+diags <- list()
+diags[[1]] <- rep(1, 100)
+diags[[2]] <- rep(0.5, 100)
+Kinv <- bandSparse(100, k = -(0:1), diag = diags, symm = TRUE)
+K <- solve(Kinv)
+corSigma <- cov2cor(K)
+
+for(num_iter in 1:length(num_samp)){
+  n <- num_samp[num_iter]
+  P <- 100
+  data <- MASS::mvrnorm(n,rep(0,P),corSigma)
+  S <- cov(data)
+
+
+  ###  GLASSO
+
+  nr  <- 100
+  rho <- seq(0.1,10,length=nr)
+  bic <- rho
+  for(j in 1:nr){
+    a       <- glasso::glasso(S,rho[j])
+    p_off_d <- sum(a$wi!=0 & col(S)<row(S))
+    bic[j]  <- -2*(a$loglik) + p_off_d*log(n)
+  }
+  best <- which.min(bic)
+
+  a <- glasso::glasso(S,rho[best])
+  glasso_cor <- cov2cor(a$w)
+
+  ### Strimmer Shafer
+
+  strimmer_sample <- corpcor::cor.shrink(data)
+
+
+  ### CorShrink
+
+  cov_sample_ML <-  CorShrinkData(data, sd_boot = FALSE, 
+                                  image = "null",
+                                  ash.control = list())
+
+  num <- 20
+  eigs.df <- data.frame ("x" = rep(1:num, 5),
+                         "y" = c(eigen(cov2cor(S))$values[1:num], eigen(strimmer_sample)$values[1:num],
+                                 eigen(glasso_cor)$values[1:num], eigen(cov_sample_ML$ash_cor_only)$values[1:num],
+                                 eigen(corSigma)$values[1:num]),
+                         "color" = c(rep("empirical", num), rep("strimmer",  num), rep("glasso", num),
+                                     rep("corshrink", num), rep("true", num)),
+                         "type" = c(rep("A", 4*num), rep("B", num)))
+
+
+  p <- ggplot(eigs.df, aes(x=x, y=y, colour=color, linetype = color)) + geom_line(lty = 1, lwd = 0.7) +
+    scale_linetype_manual(values = c(rep("solid", 4), rep("dashed", 1))) +
+    scale_colour_manual(values=c("#000000", "blue", "green", "gold",
+                                 "red", "#0072B2", "#CC79A7", "#F0E442")) +
+    theme_bw() + theme(legend.position="none") + 
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) 
+  gg[[(8+num_iter)]] <- p
+  cat("We are at iteration", num_iter, "\n")
+}
+
+grid.arrange(gg[[9]], gg[[10]], gg[[11]], gg[[12]], nrow = 2, ncol = 2)
+
+
+```
+
+```{r}
+ p <- ggplot(eigs.df, aes(x=x, y=y, colour=color, linetype = color)) + geom_line(lty = 1, lwd = 0.7) +
+    scale_linetype_manual(values = c(rep("solid", 4), rep("dashed", 1))) +
+    scale_colour_manual(values=c("#000000", "blue", "green", "gold",
+                                 "red", "#0072B2", "#CC79A7", "#F0E442")) +
+    ggtitle(paste0("n=", num_samp[num_iter], ", p=100")) + xlab("Index") + ylab("eigenvalues")+
+    theme_bw() 
+print(p)
+```
+
+## Combining results
+
+```{r}
+grid.arrange(gg[[1]],gg[[2]],gg[[3]],gg[[4]],
+             gg[[5]],gg[[6]],gg[[7]],gg[[8]],
+             gg[[9]],gg[[10]],gg[[11]],gg[[12]], 
+             nrow = 4, ncol = 3, as.table = FALSE) 
+```
+

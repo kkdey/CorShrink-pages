@@ -1,0 +1,1723 @@
+---
+title: "CorShrink on dsc simulated data (graph data maker)"
+author: "Kushal K Dey"
+date: "6/22/2017"
+output: 
+  html_document:
+    theme : cosmo
+    code_folding: hide
+---
+
+```{r}
+library(spcov)
+library(CorShrink)
+library(corpcor)
+library(glasso)
+library(huge)
+```
+
+```{r}
+DM_graph = function(n,P,g_type = NULL,para = NULL){
+  library(huge)
+  index1=sort(sample(seq(1:n),(n/2)))
+  index2=seq(1:n)[-index1]
+  if(is.null(g_type)){
+    # default is random graph
+    data_list = huge.generator(n = n, d = P, prob = para, vis = TRUE)
+  }else{
+    data_list = huge.generator(n = n, d = P, graph = g_type, g = para, vis = TRUE)
+  }
+  data = data_list$data
+  Xtest = data[index2,]
+  Xtrain = data[index1,]
+  Sigma = data_list$sigma
+  return(list(Xtrain = Xtrain, Xtest = Xtest, Sigma = Sigma))
+}
+
+
+```
+
+## DM graph (band)
+
+### n = 10, P=100
+
+```{r}
+n <- 10
+P <- 100
+ll <- DM_graph(n,P,g_type = "band",para = 3)
+data <- rbind(ll$Xtrain, ll$Xtest)
+Sigma <- ll$Sigma
+corSigma <- cov2cor(Sigma)
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(corSigma),
+      col=col, main=paste0("pop corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+
+```{r}
+Pat <- matrix(1, P, P)
+diag(Pat) <- 0
+```
+
+```{r}
+lam <- 0.06
+step.size <- 100
+tol <- 1e-4
+covmat <- cov(data)
+mm <- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)
+```
+
+```{r}
+spcor_mat <- cov2cor(mm$Sigma)
+```
+
+```{r}
+#devtools::install_github("kkdey/CorShrink")
+#library(CorShrink)
+#sessionInfo()
+cov_mat <- cov(data);
+system.time(strimmer_sample <- corpcor::cov.shrink(data))
+system.time(glasso_sample_005 <- glasso::glasso(cov_mat, rho = 0.05))
+system.time(glasso_sample_05 <- glasso::glasso(cov_mat, rho = 0.5))
+system.time(glasso_sample_1 <- glasso::glasso(cov_mat, rho = 1))
+system.time(glasso_sample_10 <- glasso::glasso(cov_mat, rho = 10))
+system.time(cov_sample_ML <-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P),  ash.control = list(mixcompdist = "normal", nullweight = 10)))
+```
+
+```{r fig.width=6, fig.height=6}
+par(mfrow=c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0("sample corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0("shafer strimmer: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0("corshrink: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0("glasso 0.05: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0("glasso 0.5: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0("spcov:", expression(lambda), "=", lam), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+### n = 50, P=100
+
+```{r}
+n <- 50
+P <- 100
+ll <- DM_graph(n,P,g_type = "band",para = 3)
+data <- rbind(ll$Xtrain, ll$Xtest)
+Sigma <- ll$Sigma
+corSigma <- cov2cor(Sigma)
+```
+
+```{r}
+Pat <- matrix(1, P, P)
+diag(Pat) <- 0
+```
+
+```{r}
+lam <- 0.06
+step.size <- 100
+tol <- 1e-4
+covmat <- cov(data)
+mm <- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)
+```
+
+```{r}
+spcor_mat <- cov2cor(mm$Sigma)
+```
+
+```{r}
+#devtools::install_github("kkdey/CorShrink")
+#library(CorShrink)
+#sessionInfo()
+cov_mat <- cov(data);
+system.time(strimmer_sample <- corpcor::cov.shrink(data))
+system.time(glasso_sample_005 <- glasso::glasso(cov_mat, rho = 0.05))
+system.time(glasso_sample_05 <- glasso::glasso(cov_mat, rho = 0.5))
+system.time(glasso_sample_1 <- glasso::glasso(cov_mat, rho = 1))
+system.time(glasso_sample_10 <- glasso::glasso(cov_mat, rho = 10))
+system.time(cov_sample_ML <-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = "normal", nullweight = 10)))
+```
+
+```{r fig.width=6, fig.height=6}
+par(mfrow=c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0("sample corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0("shafer strimmer: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0("corshrink: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0("glasso 0.05: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0("glasso 0.5: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0("spcov:", expression(lambda), "=", lam), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+
+### n = 5, P=100
+
+```{r}
+n <- 5
+P <- 100
+ll <- DM_graph(n,P,g_type = "band",para = 3)
+data <- rbind(ll$Xtrain, ll$Xtest)
+Sigma <- ll$Sigma
+corSigma <- cov2cor(Sigma)
+```
+
+```{r}
+Pat <- matrix(1, P, P)
+diag(Pat) <- 0
+```
+
+```{r}
+lam <- 0.06
+step.size <- 100
+tol <- 1e-4
+covmat <- cov(data)
+mm <- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)
+```
+
+```{r}
+spcor_mat <- cov2cor(mm$Sigma)
+```
+
+```{r}
+#devtools::install_github("kkdey/CorShrink")
+#library(CorShrink)
+#sessionInfo()
+cov_mat <- cov(data);
+system.time(strimmer_sample <- corpcor::cov.shrink(data))
+system.time(glasso_sample_005 <- glasso::glasso(cov_mat, rho = 0.05))
+system.time(glasso_sample_05 <- glasso::glasso(cov_mat, rho = 0.5))
+system.time(glasso_sample_1 <- glasso::glasso(cov_mat, rho = 1))
+system.time(glasso_sample_10 <- glasso::glasso(cov_mat, rho = 10))
+system.time(cov_sample_ML <-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = "normal", nullweight = 10)))
+```
+
+```{r fig.width=6, fig.height=6}
+par(mfrow=c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0("sample corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0("shafer strimmer: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0("corshrink: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0("glasso 0.05: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0("glasso 0.5: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0("spcov:", expression(lambda), "=", lam), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+
+## DM graph (cluster)
+
+### n = 10, P=100
+
+```{r}
+n <- 10
+P <- 100
+ll <- DM_graph(n,P,g_type = "cluster", para = 5)
+data <- rbind(ll$Xtrain, ll$Xtest)
+Sigma <- ll$Sigma
+corSigma <- cov2cor(Sigma)
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(corSigma),
+      col=col, main=paste0("pop corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+
+```{r}
+Pat <- matrix(1, P, P)
+diag(Pat) <- 0
+```
+
+```{r}
+lam <- 0.06
+step.size <- 100
+tol <- 1e-4
+covmat <- cov(data)
+mm <- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)
+```
+
+```{r}
+spcor_mat <- cov2cor(mm$Sigma)
+```
+
+```{r}
+#devtools::install_github("kkdey/CorShrink")
+#library(CorShrink)
+#sessionInfo()
+cov_mat <- cov(data);
+system.time(strimmer_sample <- corpcor::cov.shrink(data))
+system.time(glasso_sample_005 <- glasso::glasso(cov_mat, rho = 0.05))
+system.time(glasso_sample_05 <- glasso::glasso(cov_mat, rho = 0.5))
+system.time(glasso_sample_1 <- glasso::glasso(cov_mat, rho = 1))
+system.time(glasso_sample_10 <- glasso::glasso(cov_mat, rho = 10))
+system.time(cov_sample_ML <-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = "normal", nullweight = 10)))
+```
+
+```{r fig.width=6, fig.height=6}
+par(mfrow=c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0("sample corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0("shafer strimmer: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0("corshrink: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0("glasso 0.05: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0("glasso 0.5: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0("spcov:", expression(lambda), "=", lam), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+### n = 50, P=100
+
+```{r}
+n <- 50
+P <- 100
+ll <- DM_graph(n,P,g_type = "cluster", para = 5)
+data <- rbind(ll$Xtrain, ll$Xtest)
+Sigma <- ll$Sigma
+corSigma <- cov2cor(Sigma)
+```
+
+```{r}
+Pat <- matrix(1, P, P)
+diag(Pat) <- 0
+```
+
+```{r}
+lam <- 0.06
+step.size <- 100
+tol <- 1e-4
+covmat <- cov(data)
+mm <- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)
+```
+
+```{r}
+spcor_mat <- cov2cor(mm$Sigma)
+```
+
+```{r}
+#devtools::install_github("kkdey/CorShrink")
+#library(CorShrink)
+#sessionInfo()
+cov_mat <- cov(data);
+system.time(strimmer_sample <- corpcor::cov.shrink(data))
+system.time(glasso_sample_005 <- glasso::glasso(cov_mat, rho = 0.05))
+system.time(glasso_sample_05 <- glasso::glasso(cov_mat, rho = 0.5))
+system.time(glasso_sample_1 <- glasso::glasso(cov_mat, rho = 1))
+system.time(glasso_sample_10 <- glasso::glasso(cov_mat, rho = 10))
+system.time(cov_sample_ML <-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = "normal", nullweight = 10)))
+```
+
+```{r fig.width=6, fig.height=6}
+par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0("sample corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0("shafer strimmer: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0("corshrink: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0("glasso 0.05: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0("glasso 0.5: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0("spcov:", expression(lambda), "=", lam), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+
+### n = 5, P=100
+
+```{r}
+n <- 5
+P <- 100
+ll <- DM_graph(n,P,g_type = "cluster", para = 5)
+data <- rbind(ll$Xtrain, ll$Xtest)
+Sigma <- ll$Sigma
+corSigma <- cov2cor(Sigma)
+```
+
+```{r}
+Pat <- matrix(1, P, P)
+diag(Pat) <- 0
+```
+
+```{r}
+lam <- 0.06
+step.size <- 100
+tol <- 1e-4
+covmat <- cov(data)
+mm <- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)
+```
+
+```{r}
+spcor_mat <- cov2cor(mm$Sigma)
+```
+
+```{r}
+#devtools::install_github("kkdey/CorShrink")
+#library(CorShrink)
+#sessionInfo()
+cov_mat <- cov(data);
+system.time(strimmer_sample <- corpcor::cov.shrink(data))
+system.time(glasso_sample_005 <- glasso::glasso(cov_mat, rho = 0.05))
+system.time(glasso_sample_05 <- glasso::glasso(cov_mat, rho = 0.5))
+system.time(glasso_sample_1 <- glasso::glasso(cov_mat, rho = 1))
+system.time(glasso_sample_10 <- glasso::glasso(cov_mat, rho = 10))
+system.time(cov_sample_ML <-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = "normal", nullweight = 10)))
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0("sample corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+```{r fig.width=6, fig.height=6}
+par(mfrow=c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0("shafer strimmer: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0("corshrink: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0("glasso 0.05: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0("glasso 0.5: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0("spcov:", expression(lambda), "=", lam), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+
+## DM graph (dense Edors Renyi graph)
+
+### n = 10, P=100
+
+```{r}
+n <- 10
+P <- 100
+ll <- DM_graph(n,P, para = 0.5)
+data <- rbind(ll$Xtrain, ll$Xtest)
+Sigma <- ll$Sigma
+corSigma <- cov2cor(Sigma)
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(corSigma),
+      col=col, main=paste0("pop corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+
+```{r}
+Pat <- matrix(1, P, P)
+diag(Pat) <- 0
+```
+
+```{r}
+lam <- 0.06
+step.size <- 100
+tol <- 1e-4
+covmat <- cov(data)
+mm <- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)
+```
+
+```{r}
+spcor_mat <- cov2cor(mm$Sigma)
+```
+
+```{r}
+#devtools::install_github("kkdey/CorShrink")
+#library(CorShrink)
+#sessionInfo()
+cov_mat <- cov(data);
+system.time(strimmer_sample <- corpcor::cov.shrink(data))
+system.time(glasso_sample_005 <- glasso::glasso(cov_mat, rho = 0.05))
+system.time(glasso_sample_05 <- glasso::glasso(cov_mat, rho = 0.5))
+system.time(glasso_sample_1 <- glasso::glasso(cov_mat, rho = 1))
+system.time(glasso_sample_10 <- glasso::glasso(cov_mat, rho = 10))
+system.time(cov_sample_ML <-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = "normal", nullweight = 10)))
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0("sample corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+```{r fig.width=6, fig.height=6}
+par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0("shafer strimmer: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0("corshrink: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0("glasso 0.05: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0("glasso 0.5: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0("spcov:", expression(lambda), "=", lam), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+### n = 50, P=100
+
+```{r}
+n <- 50
+P <- 100
+ll <- DM_graph(n,P, para = 0.5)
+data <- rbind(ll$Xtrain, ll$Xtest)
+Sigma <- ll$Sigma
+corSigma <- cov2cor(Sigma)
+```
+
+```{r}
+Pat <- matrix(1, P, P)
+diag(Pat) <- 0
+```
+
+```{r}
+lam <- 0.06
+step.size <- 100
+tol <- 1e-4
+covmat <- cov(data)
+mm <- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)
+```
+
+```{r}
+spcor_mat <- cov2cor(mm$Sigma)
+```
+
+```{r}
+#devtools::install_github("kkdey/CorShrink")
+#library(CorShrink)
+#sessionInfo()
+cov_mat <- cov(data);
+system.time(strimmer_sample <- corpcor::cov.shrink(data))
+system.time(glasso_sample_005 <- glasso::glasso(cov_mat, rho = 0.05))
+system.time(glasso_sample_05 <- glasso::glasso(cov_mat, rho = 0.5))
+system.time(glasso_sample_1 <- glasso::glasso(cov_mat, rho = 1))
+system.time(glasso_sample_10 <- glasso::glasso(cov_mat, rho = 10))
+system.time(cov_sample_ML <-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = "normal", nullweight = 10)))
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0("sample corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+```{r fig.width=6, fig.height=6}
+par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0("shafer strimmer: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0("corshrink: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0("glasso 0.05: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0("glasso 0.5: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0("spcov:", expression(lambda), "=", lam), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+
+### n = 5, P=100
+
+```{r}
+n <- 5
+P <- 100
+ll <- DM_graph(n,P, para = 0.5)
+data <- rbind(ll$Xtrain, ll$Xtest)
+Sigma <- ll$Sigma
+corSigma <- cov2cor(Sigma)
+```
+
+```{r}
+Pat <- matrix(1, P, P)
+diag(Pat) <- 0
+```
+
+```{r}
+lam <- 0.06
+step.size <- 100
+tol <- 1e-4
+covmat <- cov(data)
+mm <- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)
+```
+
+```{r}
+spcor_mat <- cov2cor(mm$Sigma)
+```
+
+```{r}
+#devtools::install_github("kkdey/CorShrink")
+#library(CorShrink)
+#sessionInfo()
+cov_mat <- cov(data);
+system.time(strimmer_sample <- corpcor::cov.shrink(data))
+system.time(glasso_sample_005 <- glasso::glasso(cov_mat, rho = 0.05))
+system.time(glasso_sample_05 <- glasso::glasso(cov_mat, rho = 0.5))
+system.time(glasso_sample_1 <- glasso::glasso(cov_mat, rho = 1))
+system.time(glasso_sample_10 <- glasso::glasso(cov_mat, rho = 10))
+system.time(cov_sample_ML <-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = "normal", nullweight = 10)))
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0("sample corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+```{r fig.width=6, fig.height=6}
+par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0("shafer strimmer: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0("corshrink: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0("glasso 0.05: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0("glasso 0.5: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0("spcov:", expression(lambda), "=", lam), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+
+## DM graph (sparse Edors Renyi graph)
+
+### n = 10, P=100
+
+```{r}
+n <- 10
+P <- 100
+ll <- DM_graph(n,P)
+data <- rbind(ll$Xtrain, ll$Xtest)
+Sigma <- ll$Sigma
+corSigma <- cov2cor(Sigma)
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(corSigma),
+      col=col, main=paste0("pop corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+
+```{r}
+Pat <- matrix(1, P, P)
+diag(Pat) <- 0
+```
+
+```{r}
+lam <- 0.06
+step.size <- 100
+tol <- 1e-4
+covmat <- cov(data)
+mm <- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)
+```
+
+```{r}
+spcor_mat <- cov2cor(mm$Sigma)
+```
+
+```{r}
+#devtools::install_github("kkdey/CorShrink")
+#library(CorShrink)
+#sessionInfo()
+cov_mat <- cov(data);
+system.time(strimmer_sample <- corpcor::cov.shrink(data))
+system.time(glasso_sample_005 <- glasso::glasso(cov_mat, rho = 0.05))
+system.time(glasso_sample_05 <- glasso::glasso(cov_mat, rho = 0.5))
+system.time(glasso_sample_1 <- glasso::glasso(cov_mat, rho = 1))
+system.time(glasso_sample_10 <- glasso::glasso(cov_mat, rho = 10))
+system.time(cov_sample_ML <-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = "normal", nullweight = 10)))
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0("sample corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+```{r fig.width=6, fig.height=6}
+par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0("shafer strimmer: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0("corshrink: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0("glasso 0.05: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0("glasso 0.5: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0("spcov:", expression(lambda), "=", lam), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+### n = 50, P=100
+
+```{r}
+n <- 50
+P <- 100
+ll <- DM_graph(n,P)
+data <- rbind(ll$Xtrain, ll$Xtest)
+Sigma <- ll$Sigma
+corSigma <- cov2cor(Sigma)
+```
+
+```{r}
+Pat <- matrix(1, P, P)
+diag(Pat) <- 0
+```
+
+```{r}
+lam <- 0.06
+step.size <- 100
+tol <- 1e-4
+covmat <- cov(data)
+mm <- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)
+```
+
+```{r}
+spcor_mat <- cov2cor(mm$Sigma)
+```
+
+```{r}
+#devtools::install_github("kkdey/CorShrink")
+#library(CorShrink)
+#sessionInfo()
+cov_mat <- cov(data);
+system.time(strimmer_sample <- corpcor::cov.shrink(data))
+system.time(glasso_sample_005 <- glasso::glasso(cov_mat, rho = 0.05))
+system.time(glasso_sample_05 <- glasso::glasso(cov_mat, rho = 0.5))
+system.time(glasso_sample_1 <- glasso::glasso(cov_mat, rho = 1))
+system.time(glasso_sample_10 <- glasso::glasso(cov_mat, rho = 10))
+system.time(cov_sample_ML <-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = "normal", nullweight = 10)))
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0("sample corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+```{r fig.width=6, fig.height=6}
+par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0("shafer strimmer: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0("corshrink: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0("glasso 0.05: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0("glasso 0.5: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0("spcov:", expression(lambda), "=", lam), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+
+### n = 5, P=100
+
+```{r}
+n <- 5
+P <- 100
+ll <- DM_graph(n,P)
+data <- rbind(ll$Xtrain, ll$Xtest)
+Sigma <- ll$Sigma
+corSigma <- cov2cor(Sigma)
+```
+
+```{r}
+Pat <- matrix(1, P, P)
+diag(Pat) <- 0
+```
+
+```{r}
+lam <- 0.06
+step.size <- 100
+tol <- 1e-4
+covmat <- cov(data)
+mm <- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)
+```
+
+```{r}
+spcor_mat <- cov2cor(mm$Sigma)
+```
+
+```{r}
+#devtools::install_github("kkdey/CorShrink")
+#library(CorShrink)
+#sessionInfo()
+cov_mat <- cov(data);
+system.time(strimmer_sample <- corpcor::cov.shrink(data))
+system.time(glasso_sample_005 <- glasso::glasso(cov_mat, rho = 0.05))
+system.time(glasso_sample_05 <- glasso::glasso(cov_mat, rho = 0.5))
+system.time(glasso_sample_1 <- glasso::glasso(cov_mat, rho = 1))
+system.time(glasso_sample_10 <- glasso::glasso(cov_mat, rho = 10))
+system.time(cov_sample_ML <-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = "normal", nullweight = 10)))
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0("sample corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+```{r fig.width=6, fig.height=6}
+par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0("shafer strimmer: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0("corshrink: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0("glasso 0.05: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0("glasso 0.5: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0("spcov:", expression(lambda), "=", lam), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+
+## DM graph (hub graph)
+
+### n = 10, P=100
+
+```{r}
+n <- 10
+P <- 100
+ll <- DM_graph(n,P,g_type = "hub", para = 5)
+data <- rbind(ll$Xtrain, ll$Xtest)
+Sigma <- ll$Sigma
+corSigma <- cov2cor(Sigma)
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(corSigma),
+      col=col, main=paste0("pop corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+
+```{r}
+Pat <- matrix(1, P, P)
+diag(Pat) <- 0
+```
+
+```{r}
+lam <- 0.06
+step.size <- 100
+tol <- 1e-4
+covmat <- cov(data)
+mm <- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)
+```
+
+```{r}
+spcor_mat <- cov2cor(mm$Sigma)
+```
+
+```{r}
+#devtools::install_github("kkdey/CorShrink")
+#library(CorShrink)
+#sessionInfo()
+cov_mat <- cov(data);
+system.time(strimmer_sample <- corpcor::cov.shrink(data))
+system.time(glasso_sample_005 <- glasso::glasso(cov_mat, rho = 0.05))
+system.time(glasso_sample_05 <- glasso::glasso(cov_mat, rho = 0.5))
+system.time(glasso_sample_1 <- glasso::glasso(cov_mat, rho = 1))
+system.time(glasso_sample_10 <- glasso::glasso(cov_mat, rho = 10))
+system.time(cov_sample_ML <-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = "normal", nullweight = 10)))
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0("sample corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+```{r fig.width=6, fig.height=6}
+par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0("shafer strimmer: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0("corshrink: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0("glasso 0.05: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0("glasso 0.5: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0("spcov:", expression(lambda), "=", lam), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+### n = 50, P=100
+
+```{r}
+n <- 50
+P <- 100
+ll <- DM_graph(n,P,g_type = "hub", para = 5)
+data <- rbind(ll$Xtrain, ll$Xtest)
+Sigma <- ll$Sigma
+corSigma <- cov2cor(Sigma)
+```
+
+```{r}
+Pat <- matrix(1, P, P)
+diag(Pat) <- 0
+```
+
+```{r}
+lam <- 0.06
+step.size <- 100
+tol <- 1e-4
+covmat <- cov(data)
+mm <- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)
+```
+
+```{r}
+spcor_mat <- cov2cor(mm$Sigma)
+```
+
+```{r}
+#devtools::install_github("kkdey/CorShrink")
+#library(CorShrink)
+#sessionInfo()
+cov_mat <- cov(data);
+system.time(strimmer_sample <- corpcor::cov.shrink(data))
+system.time(glasso_sample_005 <- glasso::glasso(cov_mat, rho = 0.05))
+system.time(glasso_sample_05 <- glasso::glasso(cov_mat, rho = 0.5))
+system.time(glasso_sample_1 <- glasso::glasso(cov_mat, rho = 1))
+system.time(glasso_sample_10 <- glasso::glasso(cov_mat, rho = 10))
+system.time(cov_sample_ML <-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = "normal", nullweight = 10)))
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0("sample corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+```{r fig.width=6, fig.height=6}
+par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0("shafer strimmer: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0("corshrink: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0("glasso 0.05: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0("glasso 0.5: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0("spcov:", expression(lambda), "=", lam), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+
+### n = 5, P=100
+
+```{r}
+n <- 5
+P <- 100
+ll <- DM_graph(n,P,g_type = "hub", para = 5)
+data <- rbind(ll$Xtrain, ll$Xtest)
+Sigma <- ll$Sigma
+corSigma <- cov2cor(Sigma)
+```
+
+```{r}
+Pat <- matrix(1, P, P)
+diag(Pat) <- 0
+```
+
+```{r}
+lam <- 0.06
+step.size <- 100
+tol <- 1e-4
+covmat <- cov(data)
+mm <- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)
+```
+
+```{r}
+spcor_mat <- cov2cor(mm$Sigma)
+```
+
+```{r}
+#devtools::install_github("kkdey/CorShrink")
+#library(CorShrink)
+#sessionInfo()
+cov_mat <- cov(data);
+system.time(strimmer_sample <- corpcor::cov.shrink(data))
+system.time(glasso_sample_005 <- glasso::glasso(cov_mat, rho = 0.05))
+system.time(glasso_sample_05 <- glasso::glasso(cov_mat, rho = 0.5))
+system.time(glasso_sample_1 <- glasso::glasso(cov_mat, rho = 1))
+system.time(glasso_sample_10 <- glasso::glasso(cov_mat, rho = 10))
+system.time(cov_sample_ML <-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = "normal", nullweight = 10)))
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0("sample corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+```{r fig.width=6, fig.height=6}
+par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0("shafer strimmer: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0("corshrink: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0("glasso 0.05: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0("glasso 0.5: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0("spcov:", expression(lambda), "=", lam), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+
+
+## DM graph (scale free graph)
+
+### n = 10, P=100
+
+```{r}
+n <- 10
+P <- 100
+ll <- DM_graph(n,P,g_type = "scale-free")
+data <- rbind(ll$Xtrain, ll$Xtest)
+Sigma <- ll$Sigma
+corSigma <- cov2cor(Sigma)
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(corSigma),
+      col=col, main=paste0("pop corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+
+```{r}
+Pat <- matrix(1, P, P)
+diag(Pat) <- 0
+```
+
+```{r}
+lam <- 0.06
+step.size <- 100
+tol <- 1e-4
+covmat <- cov(data)
+mm <- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)
+```
+
+```{r}
+spcor_mat <- cov2cor(mm$Sigma)
+```
+
+```{r}
+#devtools::install_github("kkdey/CorShrink")
+#library(CorShrink)
+#sessionInfo()
+cov_mat <- cov(data);
+system.time(strimmer_sample <- corpcor::cov.shrink(data))
+system.time(glasso_sample_005 <- glasso::glasso(cov_mat, rho = 0.05))
+system.time(glasso_sample_05 <- glasso::glasso(cov_mat, rho = 0.5))
+system.time(glasso_sample_1 <- glasso::glasso(cov_mat, rho = 1))
+system.time(glasso_sample_10 <- glasso::glasso(cov_mat, rho = 10))
+system.time(cov_sample_ML <-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = "normal", nullweight = 10)))
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0("sample corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+```{r fig.width=6, fig.height=6}
+par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0("shafer strimmer: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0("corshrink: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0("glasso 0.05: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0("glasso 0.5: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0("spcov:", expression(lambda), "=", lam), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+### n = 50, P=100
+
+```{r}
+n <- 50
+P <- 100
+ll <- DM_graph(n,P,g_type = "scale-free")
+data <- rbind(ll$Xtrain, ll$Xtest)
+Sigma <- ll$Sigma
+corSigma <- cov2cor(Sigma)
+```
+
+```{r}
+Pat <- matrix(1, P, P)
+diag(Pat) <- 0
+```
+
+```{r}
+lam <- 0.06
+step.size <- 100
+tol <- 1e-4
+covmat <- cov(data)
+mm <- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)
+```
+
+```{r}
+spcor_mat <- cov2cor(mm$Sigma)
+```
+
+```{r}
+#devtools::install_github("kkdey/CorShrink")
+#library(CorShrink)
+#sessionInfo()
+cov_mat <- cov(data);
+system.time(strimmer_sample <- corpcor::cov.shrink(data))
+system.time(glasso_sample_005 <- glasso::glasso(cov_mat, rho = 0.05))
+system.time(glasso_sample_05 <- glasso::glasso(cov_mat, rho = 0.5))
+system.time(glasso_sample_1 <- glasso::glasso(cov_mat, rho = 1))
+system.time(glasso_sample_10 <- glasso::glasso(cov_mat, rho = 10))
+system.time(cov_sample_ML <-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = "normal", nullweight = 10)))
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0("sample corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+```{r fig.width=6, fig.height=6}
+par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0("shafer strimmer: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0("corshrink: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0("glasso 0.05: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0("glasso 0.5: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0("spcov:", expression(lambda), "=", lam), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+
+### n = 5, P=100
+
+```{r}
+n <- 5
+P <- 100
+ll <- DM_graph(n,P,g_type = "scale-free")
+data <- rbind(ll$Xtrain, ll$Xtest)
+Sigma <- ll$Sigma
+corSigma <- cov2cor(Sigma)
+```
+
+```{r}
+Pat <- matrix(1, P, P)
+diag(Pat) <- 0
+```
+
+```{r}
+lam <- 0.06
+step.size <- 100
+tol <- 1e-4
+covmat <- cov(data)
+mm <- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)
+```
+
+```{r}
+spcor_mat <- cov2cor(mm$Sigma)
+```
+
+```{r}
+#devtools::install_github("kkdey/CorShrink")
+#library(CorShrink)
+#sessionInfo()
+cov_mat <- cov(data);
+system.time(strimmer_sample <- corpcor::cov.shrink(data))
+system.time(glasso_sample_005 <- glasso::glasso(cov_mat, rho = 0.05))
+system.time(glasso_sample_05 <- glasso::glasso(cov_mat, rho = 0.5))
+system.time(glasso_sample_1 <- glasso::glasso(cov_mat, rho = 1))
+system.time(glasso_sample_10 <- glasso::glasso(cov_mat, rho = 10))
+system.time(cov_sample_ML <-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = "normal", nullweight = 10)))
+```
+
+```{r fig.width=6, fig.height=6}
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0("sample corr: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+```
+
+```{r fig.width=6, fig.height=6}
+par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0("shafer strimmer: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0("corshrink: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0("glasso 0.05: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0("glasso 0.5: "), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```
+
+```{r fig.width=6, fig.height=6}
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0("spcov:", expression(lambda), "=", lam), cex.main=2,
+      xaxt = "n", yaxt = "n", zlim=c(-1,1))
+
+```

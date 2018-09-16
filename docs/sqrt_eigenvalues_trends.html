@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Kushal K Dey" />
+
+
+<title>sqrt eigenvalues trend plots</title>
+
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+<link rel="stylesheet" href="cosmo.css" type="text/css" />
+
+</head>
+
+<body>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:100,300,400,600" rel="stylesheet" type="text/css">
+    <link href="../docs/cosmo.css" rel="stylesheet">
+    <link href="../docs/cosmo.min.css" rel="stylesheet">
+</head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="../docs/bootstrap/js/bootstrap.min.js"></script>
+
+<body>
+
+<div class = "nav" align = "middle">
+<div class= "p1"></div>
+<p>
+  <a class="btn btn-large btn btn-primary" type="button" href = "index.html">CorShrink</a>
+  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+  <a class="btn btn-large btn btn-primary" type="button" href = "demo.html">DEMO</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow_project.html">WORKFLOW</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink">R PACKAGE</a>
+ </p>
+</div>
+<!-- <div class="nav">
+  <a href="index.html">Home page</a> &nbsp &nbsp
+  <a href="musings.html">Musings</a> &nbsp &nbsp
+  <a href="town.html">My town</a> &nbsp &nbsp
+  <a href="links.html">Links</a>
+</div> -->
+
+<!-- Main content -->
+</body>
+</html>
+
+
+<h1 class="title toc-ignore">sqrt eigenvalues trend plots</h1>
+<h4 class="author"><em>Kushal K Dey</em></h4>
+<h4 class="date"><em>3/31/2018</em></h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#simulation-scripts">Simulation Scripts</a><ul>
+<li><a href="#hub">Hub</a></li>
+<li><a href="#toeplitz">Toeplitz</a></li>
+<li><a href="#banded-precision">Banded Precision</a></li>
+</ul></li>
+<li><a href="#visualization">Visualization</a></li>
+<li><a href="#example">Example</a></li>
+<li><a href="#plotting-hub-sqrt-eigenvalues">Plotting Hub sqrt eigenvalues</a></li>
+<li><a href="#plotting-toeplitz-sqrt-eigenvalues">Plotting Toeplitz sqrt eigenvalues</a></li>
+<li><a href="#plotting-banded-precision-sqrt-eigenvalues">Plotting banded precision sqrt eigenvalues</a></li>
+</ul>
+</div>
+
+<p>Here we plot the trends of the square root of the eigenvalues of the estimated correlation matrices using different approaches - CorShrink, glasso and corpcor - against the tru correlation matrix.</p>
+<pre class="r"><code>library(ggplot2)
+library(gridExtra)</code></pre>
+<div id="simulation-scripts" class="section level2">
+<h2>Simulation Scripts</h2>
+<p>We run the following scripts for different choices of <span class="math inline">\(n\)</span> and <span class="math inline">\(p\)</span> for the Hub, Toeplitz and Banded Precision matrices.</p>
+<div id="hub" class="section level3">
+<h3>Hub</h3>
+<pre class="r"><code>source(&quot;../code/Figure2/eigenvalues_distribution_hub.R&quot;)</code></pre>
+</div>
+<div id="toeplitz" class="section level3">
+<h3>Toeplitz</h3>
+<pre class="r"><code>source(&quot;../code/Figure2/eigenvalues_distribution_toeplitz.R&quot;)</code></pre>
+</div>
+<div id="banded-precision" class="section level3">
+<h3>Banded Precision</h3>
+<pre class="r"><code>source(&quot;../code/Figure2/eigenvalues_distribution_sparse_nonsparse.R&quot;)</code></pre>
+<p>The outputs from running each of these are saved under <code>/shared_output/eigenvalues_sqrt_distribution/</code> and are read as follows to perform the visualization.</p>
+</div>
+</div>
+<div id="visualization" class="section level2">
+<h2>Visualization</h2>
+<pre class="r"><code>hub_sqrt_eigenvalues &lt;- get(load(&quot;../shared_output/eigenvalues_sqrt_distribution/hub_sqrt_eigenvalues_distribution.rda&quot;))
+banded_prec_sqrt_eigenvalues &lt;- get(load(&quot;../shared_output/eigenvalues_sqrt_distribution/banded_precision_sqrt_eigenvalues_distribution.rda&quot;))
+toeplitz_sqrt_eigenvalues &lt;- get(load(&quot;../shared_output/eigenvalues_sqrt_distribution/toeplitz_sqrt_eigenvalues_distribution.rda&quot;))</code></pre>
+</div>
+<div id="example" class="section level2">
+<h2>Example</h2>
+<pre class="r"><code>eigenvalue_trends &lt;- hub_sqrt_eigenvalues
+num_samp &lt;- c(30, 50, 100, 1000)
+num &lt;- 20
+eigs.df &lt;- data.frame (&quot;x&quot; = rep(1:num, 9),
+                         &quot;y&quot; = eigenvalue_trends[[1]]$mean,
+                         &quot;color&quot; = factor(c(rep(&quot;empirical&quot;, num), 
+                                     rep(&quot;corpcor&quot;,  num), 
+                                     rep(&quot;corshrink&quot;, num), 
+                                     rep(&quot;pdsce&quot;, num),
+                                     rep(&quot;glasso:1e-02&quot;, num),
+                                     rep(&quot;glasso:0.1&quot;, num),
+                                     rep(&quot;glasso:0.5&quot;, num),
+                                     rep(&quot;glasso:1&quot;, num),
+                                     rep(&quot;true&quot;, num)), levels = c(&quot;empirical&quot;, &quot;corpcor&quot;,
+                                        &quot;corshrink&quot;, &quot;pdsce&quot;,
+                                        &quot;glasso:1e-02&quot;,
+                                        &quot;glasso:0.1&quot;,
+                                        &quot;glasso:0.5&quot;,
+                                        &quot;glasso:1&quot;, &quot;true&quot;)),
+                         &quot;type&quot; = c(rep(&quot;A&quot;, 8*num), rep(&quot;B&quot;, num)))
+
+ggplot(eigs.df, aes(x=x, y=y, colour=color, linetype = color)) + geom_line(lty = 1, lwd = 0.7) +
+    scale_linetype_manual(values = c(rep(&quot;solid&quot;, 4), rep(&quot;dashed&quot;, 1))) +
+    scale_colour_manual(values=c(&quot;khaki4&quot;, &quot;blue&quot;, &quot;green&quot;, &quot;gold&quot;, &quot;magenta&quot;,
+                                 &quot;red&quot;, &quot;#0072B2&quot;, &quot;#CC79A7&quot;, &quot;#000000&quot;)) + xlab(&quot;&quot;) + ylab(&quot;eigenvalues&quot;) +
+    theme_bw() </code></pre>
+<p><img src="sqrt_eigenvalues_trends_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+</div>
+<div id="plotting-hub-sqrt-eigenvalues" class="section level2">
+<h2>Plotting Hub sqrt eigenvalues</h2>
+<pre class="r"><code>eigenvalue_trends &lt;- hub_sqrt_eigenvalues
+num_samp &lt;- c(30, 50, 100, 1000)
+num &lt;- 20
+gg &lt;- list()
+for(i in 1:4){
+  eigs.df &lt;- data.frame (&quot;x&quot; = rep(1:num, 9),
+                         &quot;y&quot; = eigenvalue_trends[[i]]$mean,
+                         &quot;color&quot; = factor(c(rep(&quot;empirical&quot;, num), 
+                                     rep(&quot;corpcor&quot;,  num), 
+                                     rep(&quot;corshrink&quot;, num), 
+                                     rep(&quot;pdsce&quot;, num),
+                                     rep(&quot;glasso:1e-02&quot;, num),
+                                     rep(&quot;glasso:0.1&quot;, num),
+                                     rep(&quot;glasso:0.5&quot;, num),
+                                     rep(&quot;glasso:1&quot;, num),
+                                     rep(&quot;true&quot;, num)), levels = c(&quot;empirical&quot;, &quot;corpcor&quot;,
+                                        &quot;corshrink&quot;, &quot;pdsce&quot;,
+                                        &quot;glasso:1e-02&quot;,
+                                        &quot;glasso:0.1&quot;,
+                                        &quot;glasso:0.5&quot;,
+                                        &quot;glasso:1&quot;, &quot;true&quot;)),
+                         &quot;type&quot; = c(rep(&quot;A&quot;, 8*num), rep(&quot;B&quot;, num)))
+
+ gg[[i]] &lt;- ggplot(eigs.df, aes(x=x, y=y, colour=color, linetype = color)) + 
+                   geom_line(lty = 1, lwd = 0.7) +
+                   scale_linetype_manual(values = c(rep(&quot;solid&quot;, 4), rep(&quot;dashed&quot;, 1))) +
+                   scale_colour_manual(values=c(&quot;khaki4&quot;, &quot;blue&quot;, &quot;green&quot;, &quot;gold&quot;, &quot;magenta&quot;,
+                                 &quot;red&quot;, &quot;#0072B2&quot;, &quot;#CC79A7&quot;, &quot;#000000&quot;)) + xlab(&quot;&quot;) + 
+                   ylab(&quot;sqrt eigenvalues&quot;) + ggtitle(paste0(&quot;n = &quot;, num_samp[i], &quot;, p = 100&quot;)) + 
+                   theme_bw() + theme(legend.position=&quot;none&quot;)
+}
+
+grid.arrange(gg[[1]], gg[[2]], gg[[3]],
+             gg[[4]], nrow = 2, ncol = 2)</code></pre>
+<p><img src="sqrt_eigenvalues_trends_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+</div>
+<div id="plotting-toeplitz-sqrt-eigenvalues" class="section level2">
+<h2>Plotting Toeplitz sqrt eigenvalues</h2>
+<pre class="r"><code>eigenvalue_trends &lt;- toeplitz_sqrt_eigenvalues
+num_samp &lt;- c(30, 50, 100, 1000)
+num &lt;- 20
+for(i in 1:4){
+  eigs.df &lt;- data.frame (&quot;x&quot; = rep(1:num, 9),
+                         &quot;y&quot; = eigenvalue_trends[[i]]$mean,
+                         &quot;color&quot; = factor(c(rep(&quot;empirical&quot;, num), 
+                                     rep(&quot;corpcor&quot;,  num), 
+                                     rep(&quot;corshrink&quot;, num), 
+                                     rep(&quot;pdsce&quot;, num),
+                                     rep(&quot;glasso:1e-02&quot;, num),
+                                     rep(&quot;glasso:0.1&quot;, num),
+                                     rep(&quot;glasso:0.5&quot;, num),
+                                     rep(&quot;glasso:1&quot;, num),
+                                     rep(&quot;true&quot;, num)), levels = c(&quot;empirical&quot;, &quot;corpcor&quot;,
+                                        &quot;corshrink&quot;, &quot;pdsce&quot;,
+                                        &quot;glasso:1e-02&quot;,
+                                        &quot;glasso:0.1&quot;,
+                                        &quot;glasso:0.5&quot;,
+                                        &quot;glasso:1&quot;, &quot;true&quot;)),
+                         &quot;type&quot; = c(rep(&quot;A&quot;, 8*num), rep(&quot;B&quot;, num)))
+
+ gg[[(4+i)]] &lt;- ggplot(eigs.df, aes(x=x, y=y, colour=color, linetype = color)) + 
+                   geom_line(lty = 1, lwd = 0.7) +
+                   scale_linetype_manual(values = c(rep(&quot;solid&quot;, 4), rep(&quot;dashed&quot;, 1))) +
+                   scale_colour_manual(values=c(&quot;khaki4&quot;, &quot;blue&quot;, &quot;green&quot;, &quot;gold&quot;, &quot;magenta&quot;,
+                                 &quot;red&quot;, &quot;#0072B2&quot;, &quot;#CC79A7&quot;, &quot;#000000&quot;)) + xlab(&quot;&quot;) + 
+                   ylab(&quot;sqrt eigenvalues&quot;) + ggtitle(paste0(&quot;n = &quot;, num_samp[i], &quot;, p = 100&quot;)) + 
+                   theme_bw() + theme(legend.position=&quot;none&quot;)
+}
+
+grid.arrange(gg[[5]], gg[[6]], gg[[7]],
+             gg[[8]], nrow = 2, ncol = 2)</code></pre>
+<p><img src="sqrt_eigenvalues_trends_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+</div>
+<div id="plotting-banded-precision-sqrt-eigenvalues" class="section level2">
+<h2>Plotting banded precision sqrt eigenvalues</h2>
+<pre class="r"><code>eigenvalue_trends &lt;- banded_prec_sqrt_eigenvalues
+num_samp &lt;- c(30, 50, 100, 1000)
+num &lt;- 20
+for(i in 1:4){
+  eigs.df &lt;- data.frame (&quot;x&quot; = rep(1:num, 9),
+                         &quot;y&quot; = eigenvalue_trends[[i]]$mean,
+                         &quot;color&quot; = factor(c(rep(&quot;empirical&quot;, num), 
+                                     rep(&quot;corpcor&quot;,  num), 
+                                     rep(&quot;corshrink&quot;, num), 
+                                     rep(&quot;pdsce&quot;, num),
+                                     rep(&quot;glasso:1e-02&quot;, num),
+                                     rep(&quot;glasso:0.1&quot;, num),
+                                     rep(&quot;glasso:0.5&quot;, num),
+                                     rep(&quot;glasso:1&quot;, num),
+                                     rep(&quot;true&quot;, num)), levels = c(&quot;empirical&quot;, &quot;corpcor&quot;,
+                                        &quot;corshrink&quot;, &quot;pdsce&quot;,
+                                        &quot;glasso:1e-02&quot;,
+                                        &quot;glasso:0.1&quot;,
+                                        &quot;glasso:0.5&quot;,
+                                        &quot;glasso:1&quot;, &quot;true&quot;)),
+                         &quot;type&quot; = c(rep(&quot;A&quot;, 8*num), rep(&quot;B&quot;, num)))
+
+ gg[[(8+i)]] &lt;- ggplot(eigs.df, aes(x=x, y=y, colour=color, linetype = color)) + 
+                   geom_line(lty = 1, lwd = 0.7) +
+                   scale_linetype_manual(values = c(rep(&quot;solid&quot;, 4), rep(&quot;dashed&quot;, 1))) +
+                   scale_colour_manual(values=c(&quot;khaki4&quot;, &quot;blue&quot;, &quot;green&quot;, &quot;gold&quot;, &quot;magenta&quot;,
+                                 &quot;red&quot;, &quot;#0072B2&quot;, &quot;#CC79A7&quot;, &quot;#000000&quot;)) + xlab(&quot;&quot;) + 
+                   ylab(&quot;sqrt eigenvalues&quot;) + ggtitle(paste0(&quot;n = &quot;, num_samp[i], &quot;, p = 100&quot;)) + 
+                   theme_bw() + theme(legend.position=&quot;none&quot;)
+}
+
+grid.arrange(gg[[9]], gg[[10]], gg[[11]],
+             gg[[12]], nrow = 2, ncol = 2)</code></pre>
+<p><img src="sqrt_eigenvalues_trends_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<pre class="r"><code>grid.arrange(gg[[1]], gg[[2]], gg[[3]], gg[[4]],
+             gg[[5]], gg[[6]], gg[[7]], gg[[8]],
+             gg[[9]], gg[[10]], gg[[11]], gg[[12]],
+             nrow = 4, ncol=3, as.table=FALSE)</code></pre>
+<p><img src="sqrt_eigenvalues_trends_files/figure-html/unnamed-chunk-10-1.png" width="960" /></p>
+</div>
+
+<hr>
+<p>
+    This <a href="http://rmarkdown.rstudio.com">R Markdown</a> site was created with <a href="https://github.com/jdblischak/workflowr">workflowr</a>
+</p>
+<hr>
+
+<!-- To enable disqus, uncomment the section below and provide your disqus_shortname -->
+
+<!-- disqus
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'rmarkdown'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+-->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

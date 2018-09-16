@@ -1,0 +1,2208 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Kushal K Dey" />
+
+
+<title>CorShrink on dsc simulated data (graph data maker)</title>
+
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+<link rel="stylesheet" href="cosmo.css" type="text/css" />
+
+</head>
+
+<body>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:100,300,400,600" rel="stylesheet" type="text/css">
+    <link href="../docs/cosmo.css" rel="stylesheet">
+    <link href="../docs/cosmo.min.css" rel="stylesheet">
+</head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="../docs/bootstrap/js/bootstrap.min.js"></script>
+
+<body>
+
+<div class = "nav" align = "middle">
+<div class= "p1"></div>
+<p>
+  <a class="btn btn-large btn btn-primary" type="button" href = "index.html">HOME</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow.html">WORKFLOW</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "about.html">METHODS</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink">SOFTWARE</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "license.html">LICENSE</a>
+   &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink-pages">GITHUB</a>
+ </p>
+</div>
+<!-- <div class="nav">
+  <a href="index.html">Home page</a> &nbsp &nbsp
+  <a href="musings.html">Musings</a> &nbsp &nbsp
+  <a href="town.html">My town</a> &nbsp &nbsp
+  <a href="links.html">Links</a>
+</div> -->
+
+<!-- Main content -->
+</body>
+</html>
+
+
+<h1 class="title toc-ignore">CorShrink on dsc simulated data (graph data maker)</h1>
+<h4 class="author"><em>Kushal K Dey</em></h4>
+<h4 class="date"><em>6/22/2017</em></h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#dm-graph-band">DM graph (band)</a><ul>
+<li><a href="#n-10-p100">n = 10, P=100</a></li>
+<li><a href="#n-50-p100">n = 50, P=100</a></li>
+<li><a href="#n-5-p100">n = 5, P=100</a></li>
+</ul></li>
+<li><a href="#dm-graph-cluster">DM graph (cluster)</a><ul>
+<li><a href="#n-10-p100-1">n = 10, P=100</a></li>
+<li><a href="#n-50-p100-1">n = 50, P=100</a></li>
+<li><a href="#n-5-p100-1">n = 5, P=100</a></li>
+</ul></li>
+<li><a href="#dm-graph-dense-edors-renyi-graph">DM graph (dense Edors Renyi graph)</a><ul>
+<li><a href="#n-10-p100-2">n = 10, P=100</a></li>
+<li><a href="#n-50-p100-2">n = 50, P=100</a></li>
+<li><a href="#n-5-p100-2">n = 5, P=100</a></li>
+</ul></li>
+<li><a href="#dm-graph-sparse-edors-renyi-graph">DM graph (sparse Edors Renyi graph)</a><ul>
+<li><a href="#n-10-p100-3">n = 10, P=100</a></li>
+<li><a href="#n-50-p100-3">n = 50, P=100</a></li>
+<li><a href="#n-5-p100-3">n = 5, P=100</a></li>
+</ul></li>
+<li><a href="#dm-graph-hub-graph">DM graph (hub graph)</a><ul>
+<li><a href="#n-10-p100-4">n = 10, P=100</a></li>
+<li><a href="#n-50-p100-4">n = 50, P=100</a></li>
+<li><a href="#n-5-p100-4">n = 5, P=100</a></li>
+</ul></li>
+<li><a href="#dm-graph-scale-free-graph">DM graph (scale free graph)</a><ul>
+<li><a href="#n-10-p100-5">n = 10, P=100</a></li>
+<li><a href="#n-50-p100-5">n = 50, P=100</a></li>
+<li><a href="#n-5-p100-5">n = 5, P=100</a></li>
+</ul></li>
+</ul>
+</div>
+
+<pre class="r"><code>library(spcov)
+library(CorShrink)
+library(corpcor)
+library(glasso)
+library(huge)</code></pre>
+<pre><code>## Loading required package: Matrix</code></pre>
+<pre><code>## Loading required package: lattice</code></pre>
+<pre><code>## Loading required package: igraph</code></pre>
+<pre><code>## 
+## Attaching package: &#39;igraph&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:stats&#39;:
+## 
+##     decompose, spectrum</code></pre>
+<pre><code>## The following object is masked from &#39;package:base&#39;:
+## 
+##     union</code></pre>
+<pre><code>## Loading required package: MASS</code></pre>
+<pre class="r"><code>DM_graph = function(n,P,g_type = NULL,para = NULL){
+  library(huge)
+  index1=sort(sample(seq(1:n),(n/2)))
+  index2=seq(1:n)[-index1]
+  if(is.null(g_type)){
+    # default is random graph
+    data_list = huge.generator(n = n, d = P, prob = para, vis = TRUE)
+  }else{
+    data_list = huge.generator(n = n, d = P, graph = g_type, g = para, vis = TRUE)
+  }
+  data = data_list$data
+  Xtest = data[index2,]
+  Xtrain = data[index1,]
+  Sigma = data_list$sigma
+  return(list(Xtrain = Xtrain, Xtest = Xtest, Sigma = Sigma))
+}</code></pre>
+<div id="dm-graph-band" class="section level2">
+<h2>DM graph (band)</h2>
+<div id="n-10-p100" class="section level3">
+<h3>n = 10, P=100</h3>
+<pre class="r"><code>n &lt;- 10
+P &lt;- 100
+ll &lt;- DM_graph(n,P,g_type = &quot;band&quot;,para = 3)</code></pre>
+<pre><code>## Generating data from the multivariate normal distribution with the band graph structure....</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<pre><code>## done.</code></pre>
+<pre class="r"><code>data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(corSigma),
+      col=col, main=paste0(&quot;pop corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-4-1.png" width="576" /></p>
+<pre class="r"><code>Pat &lt;- matrix(1, P, P)
+diag(Pat) &lt;- 0</code></pre>
+<pre class="r"><code>lam &lt;- 0.06
+step.size &lt;- 100
+tol &lt;- 1e-4
+covmat &lt;- cov(data)
+mm &lt;- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)</code></pre>
+<pre><code>## ---
+## using Nesterov, backtracking line search
+## ---
+## objective:  58.62331
+## step size given to GGDescent/Nesterov: 100
+## objective:  -41.67401  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 20
+## step size given to GGDescent/Nesterov: 20
+## objective:  -42.08276  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 4
+## step size given to GGDescent/Nesterov: 4
+## objective:  -42.09079  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.8
+## step size given to GGDescent/Nesterov: 0.8
+## objective:  -42.09211  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.16
+## step size given to GGDescent/Nesterov: 0.16
+## objective:  -42.09245  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.032
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -42.09255  ( 200 iterations, max step size: 0.00128 )
+## MM converged in 6 steps!</code></pre>
+<pre class="r"><code>spcor_mat &lt;- cov2cor(mm$Sigma)</code></pre>
+<pre class="r"><code>#devtools::install_github(&quot;kkdey/CorShrink&quot;)
+#library(CorShrink)
+#sessionInfo()
+cov_mat &lt;- cov(data);
+system.time(strimmer_sample &lt;- corpcor::cov.shrink(data))</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda.var (variance vector): 0.6657 
+## 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.8459</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.018   0.000   0.019</code></pre>
+<pre class="r"><code>system.time(glasso_sample_005 &lt;- glasso::glasso(cov_mat, rho = 0.05))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.346   0.001   0.349</code></pre>
+<pre class="r"><code>system.time(glasso_sample_05 &lt;- glasso::glasso(cov_mat, rho = 0.5))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.062   0.000   0.063</code></pre>
+<pre class="r"><code>system.time(glasso_sample_1 &lt;- glasso::glasso(cov_mat, rho = 1))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(glasso_sample_10 &lt;- glasso::glasso(cov_mat, rho = 10))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(cov_sample_ML &lt;-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P),  ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 10)))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre><code>##    user  system elapsed 
+##   2.895   0.028   2.937</code></pre>
+<pre class="r"><code>par(mfrow=c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0(&quot;sample corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-9-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-10-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;corshrink: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-10-2.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0(&quot;glasso 0.05: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-10-3.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0(&quot;glasso 0.5: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-10-4.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0(&quot;spcov:&quot;, expression(lambda), &quot;=&quot;, lam), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-11-1.png" width="576" /></p>
+</div>
+<div id="n-50-p100" class="section level3">
+<h3>n = 50, P=100</h3>
+<pre class="r"><code>n &lt;- 50
+P &lt;- 100
+ll &lt;- DM_graph(n,P,g_type = &quot;band&quot;,para = 3)</code></pre>
+<pre><code>## Generating data from the multivariate normal distribution with the band graph structure....</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<pre><code>## done.</code></pre>
+<pre class="r"><code>data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>Pat &lt;- matrix(1, P, P)
+diag(Pat) &lt;- 0</code></pre>
+<pre class="r"><code>lam &lt;- 0.06
+step.size &lt;- 100
+tol &lt;- 1e-4
+covmat &lt;- cov(data)
+mm &lt;- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)</code></pre>
+<pre><code>## ---
+## using Nesterov, backtracking line search
+## ---
+## objective:  77.42316
+## step size given to GGDescent/Nesterov: 100
+## objective:  42.03639  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 20
+## step size given to GGDescent/Nesterov: 20
+## objective:  41.16218  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 4
+## step size given to GGDescent/Nesterov: 4
+## objective:  41.10249  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 0.8
+## step size given to GGDescent/Nesterov: 0.8
+## objective:  41.09489  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 0.16
+## step size given to GGDescent/Nesterov: 0.16
+## objective:  41.09326  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 0.032
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  41.0928  ( 200 iterations, max step size: 0.0064 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  41.09266  ( 200 iterations, max step size: 0.0064 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  41.09262  ( 200 iterations, max step size: 0.0064 )
+## MM converged in 8 steps!</code></pre>
+<pre class="r"><code>spcor_mat &lt;- cov2cor(mm$Sigma)</code></pre>
+<pre class="r"><code>#devtools::install_github(&quot;kkdey/CorShrink&quot;)
+#library(CorShrink)
+#sessionInfo()
+cov_mat &lt;- cov(data);
+system.time(strimmer_sample &lt;- corpcor::cov.shrink(data))</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda.var (variance vector): 1 
+## 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.7994</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.079   0.000   0.080</code></pre>
+<pre class="r"><code>system.time(glasso_sample_005 &lt;- glasso::glasso(cov_mat, rho = 0.05))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.154   0.000   0.155</code></pre>
+<pre class="r"><code>system.time(glasso_sample_05 &lt;- glasso::glasso(cov_mat, rho = 0.5))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(glasso_sample_1 &lt;- glasso::glasso(cov_mat, rho = 1))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(glasso_sample_10 &lt;- glasso::glasso(cov_mat, rho = 10))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(cov_sample_ML &lt;-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 10)))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre><code>##    user  system elapsed 
+##   3.506   0.072   3.590</code></pre>
+<pre class="r"><code>par(mfrow=c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0(&quot;sample corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-17-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-18-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;corshrink: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-18-2.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0(&quot;glasso 0.05: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-18-3.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0(&quot;glasso 0.5: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-18-4.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0(&quot;spcov:&quot;, expression(lambda), &quot;=&quot;, lam), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-19-1.png" width="576" /></p>
+</div>
+<div id="n-5-p100" class="section level3">
+<h3>n = 5, P=100</h3>
+<pre class="r"><code>n &lt;- 5
+P &lt;- 100
+ll &lt;- DM_graph(n,P,g_type = &quot;band&quot;,para = 3)</code></pre>
+<pre><code>## Generating data from the multivariate normal distribution with the band graph structure....</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
+<pre><code>## done.</code></pre>
+<pre class="r"><code>data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>Pat &lt;- matrix(1, P, P)
+diag(Pat) &lt;- 0</code></pre>
+<pre class="r"><code>lam &lt;- 0.06
+step.size &lt;- 100
+tol &lt;- 1e-4
+covmat &lt;- cov(data)
+mm &lt;- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)</code></pre>
+<pre><code>## ---
+## using Nesterov, backtracking line search
+## ---
+## objective:  118.8094
+## step size given to GGDescent/Nesterov: 100
+## objective:  -60.78012  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 20
+## step size given to GGDescent/Nesterov: 20
+## objective:  -63.18863  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 4
+## step size given to GGDescent/Nesterov: 4
+## objective:  -63.19932  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.8
+## step size given to GGDescent/Nesterov: 0.8
+## objective:  -63.20103  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.16
+## step size given to GGDescent/Nesterov: 0.16
+## objective:  -63.20148  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.032
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -63.20161  ( 200 iterations, max step size: 0.00128 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -63.20164  ( 200 iterations, max step size: 0.00128 )
+## MM converged in 7 steps!</code></pre>
+<pre class="r"><code>spcor_mat &lt;- cov2cor(mm$Sigma)</code></pre>
+<pre class="r"><code>#devtools::install_github(&quot;kkdey/CorShrink&quot;)
+#library(CorShrink)
+#sessionInfo()
+cov_mat &lt;- cov(data);
+system.time(strimmer_sample &lt;- corpcor::cov.shrink(data))</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda.var (variance vector): 0.7966 
+## 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.7162</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.009   0.000   0.009</code></pre>
+<pre class="r"><code>system.time(glasso_sample_005 &lt;- glasso::glasso(cov_mat, rho = 0.05))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.628   0.001   0.631</code></pre>
+<pre class="r"><code>system.time(glasso_sample_05 &lt;- glasso::glasso(cov_mat, rho = 0.5))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.054   0.000   0.054</code></pre>
+<pre class="r"><code>system.time(glasso_sample_1 &lt;- glasso::glasso(cov_mat, rho = 1))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.012   0.000   0.012</code></pre>
+<pre class="r"><code>system.time(glasso_sample_10 &lt;- glasso::glasso(cov_mat, rho = 10))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(cov_sample_ML &lt;-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 10)))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre><code>##    user  system elapsed 
+##   1.872   0.035   1.915</code></pre>
+<pre class="r"><code>par(mfrow=c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0(&quot;sample corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-25-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-26-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;corshrink: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-26-2.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0(&quot;glasso 0.05: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-26-3.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0(&quot;glasso 0.5: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-26-4.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0(&quot;spcov:&quot;, expression(lambda), &quot;=&quot;, lam), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-27-1.png" width="576" /></p>
+</div>
+</div>
+<div id="dm-graph-cluster" class="section level2">
+<h2>DM graph (cluster)</h2>
+<div id="n-10-p100-1" class="section level3">
+<h3>n = 10, P=100</h3>
+<pre class="r"><code>n &lt;- 10
+P &lt;- 100
+ll &lt;- DM_graph(n,P,g_type = &quot;cluster&quot;, para = 5)</code></pre>
+<pre><code>## Generating data from the multivariate normal distribution with the cluster graph structure....</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-28-1.png" width="672" /></p>
+<pre><code>## done.</code></pre>
+<pre class="r"><code>data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(corSigma),
+      col=col, main=paste0(&quot;pop corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-29-1.png" width="576" /></p>
+<pre class="r"><code>Pat &lt;- matrix(1, P, P)
+diag(Pat) &lt;- 0</code></pre>
+<pre class="r"><code>lam &lt;- 0.06
+step.size &lt;- 100
+tol &lt;- 1e-4
+covmat &lt;- cov(data)
+mm &lt;- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)</code></pre>
+<pre><code>## ---
+## using Nesterov, backtracking line search
+## ---
+## objective:  64.48307
+## step size given to GGDescent/Nesterov: 100
+## objective:  -38.88554  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 20
+## step size given to GGDescent/Nesterov: 20
+## objective:  -39.44978  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 4
+## step size given to GGDescent/Nesterov: 4
+## objective:  -39.45928  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.8
+## step size given to GGDescent/Nesterov: 0.8
+## objective:  -39.46073  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.16
+## step size given to GGDescent/Nesterov: 0.16
+## objective:  -39.4611  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.032
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -39.4612  ( 200 iterations, max step size: 0.00128 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -39.46123  ( 200 iterations, max step size: 0.00128 )
+## MM converged in 7 steps!</code></pre>
+<pre class="r"><code>spcor_mat &lt;- cov2cor(mm$Sigma)</code></pre>
+<pre class="r"><code>#devtools::install_github(&quot;kkdey/CorShrink&quot;)
+#library(CorShrink)
+#sessionInfo()
+cov_mat &lt;- cov(data);
+system.time(strimmer_sample &lt;- corpcor::cov.shrink(data))</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda.var (variance vector): 0.7148 
+## 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.8998</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(glasso_sample_005 &lt;- glasso::glasso(cov_mat, rho = 0.05))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.378   0.001   0.380</code></pre>
+<pre class="r"><code>system.time(glasso_sample_05 &lt;- glasso::glasso(cov_mat, rho = 0.5))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.032   0.000   0.033</code></pre>
+<pre class="r"><code>system.time(glasso_sample_1 &lt;- glasso::glasso(cov_mat, rho = 1))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(glasso_sample_10 &lt;- glasso::glasso(cov_mat, rho = 10))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(cov_sample_ML &lt;-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 10)))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre><code>##    user  system elapsed 
+##   2.200   0.063   2.339</code></pre>
+<pre class="r"><code>par(mfrow=c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0(&quot;sample corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-34-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-35-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;corshrink: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-35-2.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0(&quot;glasso 0.05: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-35-3.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0(&quot;glasso 0.5: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-35-4.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0(&quot;spcov:&quot;, expression(lambda), &quot;=&quot;, lam), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-36-1.png" width="576" /></p>
+</div>
+<div id="n-50-p100-1" class="section level3">
+<h3>n = 50, P=100</h3>
+<pre class="r"><code>n &lt;- 50
+P &lt;- 100
+ll &lt;- DM_graph(n,P,g_type = &quot;cluster&quot;, para = 5)</code></pre>
+<pre><code>## Generating data from the multivariate normal distribution with the cluster graph structure....</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-37-1.png" width="672" /></p>
+<pre><code>## done.</code></pre>
+<pre class="r"><code>data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>Pat &lt;- matrix(1, P, P)
+diag(Pat) &lt;- 0</code></pre>
+<pre class="r"><code>lam &lt;- 0.06
+step.size &lt;- 100
+tol &lt;- 1e-4
+covmat &lt;- cov(data)
+mm &lt;- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)</code></pre>
+<pre><code>## ---
+## using Nesterov, backtracking line search
+## ---
+## objective:  76.26152
+## step size given to GGDescent/Nesterov: 100
+## objective:  41.8605  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 20
+## step size given to GGDescent/Nesterov: 20
+## objective:  40.99096  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 4
+## step size given to GGDescent/Nesterov: 4
+## objective:  40.93208  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 0.8
+## step size given to GGDescent/Nesterov: 0.8
+## objective:  40.92464  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 0.16
+## step size given to GGDescent/Nesterov: 0.16
+## objective:  40.92308  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 0.032
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  40.92265  ( 200 iterations, max step size: 0.0064 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  40.92252  ( 200 iterations, max step size: 0.0064 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  40.92248  ( 200 iterations, max step size: 0.0064 )
+## MM converged in 8 steps!</code></pre>
+<pre class="r"><code>spcor_mat &lt;- cov2cor(mm$Sigma)</code></pre>
+<pre class="r"><code>#devtools::install_github(&quot;kkdey/CorShrink&quot;)
+#library(CorShrink)
+#sessionInfo()
+cov_mat &lt;- cov(data);
+system.time(strimmer_sample &lt;- corpcor::cov.shrink(data))</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda.var (variance vector): 0.9144 
+## 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.8058</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.005   0.000   0.005</code></pre>
+<pre class="r"><code>system.time(glasso_sample_005 &lt;- glasso::glasso(cov_mat, rho = 0.05))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.157   0.000   0.157</code></pre>
+<pre class="r"><code>system.time(glasso_sample_05 &lt;- glasso::glasso(cov_mat, rho = 0.5))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(glasso_sample_1 &lt;- glasso::glasso(cov_mat, rho = 1))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(glasso_sample_10 &lt;- glasso::glasso(cov_mat, rho = 10))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(cov_sample_ML &lt;-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 10)))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre><code>##    user  system elapsed 
+##   2.803   0.068   2.891</code></pre>
+<pre class="r"><code>par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0(&quot;sample corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-42-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-43-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;corshrink: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-43-2.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0(&quot;glasso 0.05: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-43-3.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0(&quot;glasso 0.5: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-43-4.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0(&quot;spcov:&quot;, expression(lambda), &quot;=&quot;, lam), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-44-1.png" width="576" /></p>
+</div>
+<div id="n-5-p100-1" class="section level3">
+<h3>n = 5, P=100</h3>
+<pre class="r"><code>n &lt;- 5
+P &lt;- 100
+ll &lt;- DM_graph(n,P,g_type = &quot;cluster&quot;, para = 5)</code></pre>
+<pre><code>## Generating data from the multivariate normal distribution with the cluster graph structure....</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-45-1.png" width="672" /></p>
+<pre><code>## done.</code></pre>
+<pre class="r"><code>data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>Pat &lt;- matrix(1, P, P)
+diag(Pat) &lt;- 0</code></pre>
+<pre class="r"><code>lam &lt;- 0.06
+step.size &lt;- 100
+tol &lt;- 1e-4
+covmat &lt;- cov(data)
+mm &lt;- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)</code></pre>
+<pre><code>## ---
+## using Nesterov, backtracking line search
+## ---
+## objective:  129.7098
+## step size given to GGDescent/Nesterov: 100
+## objective:  -59.88169  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 20
+## step size given to GGDescent/Nesterov: 20
+## objective:  -61.31028  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 4
+## step size given to GGDescent/Nesterov: 4
+## objective:  -61.31996  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.8
+## step size given to GGDescent/Nesterov: 0.8
+## objective:  -61.32144  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.16
+## step size given to GGDescent/Nesterov: 0.16
+## objective:  -61.32183  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.032
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -61.32194  ( 200 iterations, max step size: 0.00128 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -61.32197  ( 200 iterations, max step size: 0.00128 )
+## MM converged in 7 steps!</code></pre>
+<pre class="r"><code>spcor_mat &lt;- cov2cor(mm$Sigma)</code></pre>
+<pre class="r"><code>#devtools::install_github(&quot;kkdey/CorShrink&quot;)
+#library(CorShrink)
+#sessionInfo()
+cov_mat &lt;- cov(data);
+system.time(strimmer_sample &lt;- corpcor::cov.shrink(data))</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda.var (variance vector): 0.4911 
+## 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.7269</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(glasso_sample_005 &lt;- glasso::glasso(cov_mat, rho = 0.05))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.615   0.002   0.620</code></pre>
+<pre class="r"><code>system.time(glasso_sample_05 &lt;- glasso::glasso(cov_mat, rho = 0.5))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.061   0.000   0.062</code></pre>
+<pre class="r"><code>system.time(glasso_sample_1 &lt;- glasso::glasso(cov_mat, rho = 1))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.016   0.000   0.017</code></pre>
+<pre class="r"><code>system.time(glasso_sample_10 &lt;- glasso::glasso(cov_mat, rho = 10))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(cov_sample_ML &lt;-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 10)))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre><code>##    user  system elapsed 
+##   2.043   0.048   2.100</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0(&quot;sample corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-50-1.png" width="576" /></p>
+<pre class="r"><code>par(mfrow=c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;corshrink: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0(&quot;glasso 0.05: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0(&quot;glasso 0.5: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-51-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0(&quot;spcov:&quot;, expression(lambda), &quot;=&quot;, lam), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-52-1.png" width="576" /></p>
+</div>
+</div>
+<div id="dm-graph-dense-edors-renyi-graph" class="section level2">
+<h2>DM graph (dense Edors Renyi graph)</h2>
+<div id="n-10-p100-2" class="section level3">
+<h3>n = 10, P=100</h3>
+<pre class="r"><code>n &lt;- 10
+P &lt;- 100
+ll &lt;- DM_graph(n,P, para = 0.5)</code></pre>
+<pre><code>## Generating data from the multivariate normal distribution with the random graph structure....</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-53-1.png" width="672" /></p>
+<pre><code>## done.</code></pre>
+<pre class="r"><code>data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(corSigma),
+      col=col, main=paste0(&quot;pop corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-54-1.png" width="576" /></p>
+<pre class="r"><code>Pat &lt;- matrix(1, P, P)
+diag(Pat) &lt;- 0</code></pre>
+<pre class="r"><code>lam &lt;- 0.06
+step.size &lt;- 100
+tol &lt;- 1e-4
+covmat &lt;- cov(data)
+mm &lt;- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)</code></pre>
+<pre><code>## ---
+## using Nesterov, backtracking line search
+## ---
+## objective:  104.3729
+## step size given to GGDescent/Nesterov: 100
+## objective:  -31.73461  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 20
+## step size given to GGDescent/Nesterov: 20
+## objective:  -33.7312  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 4
+## step size given to GGDescent/Nesterov: 4
+## objective:  -33.75088  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.8
+## step size given to GGDescent/Nesterov: 0.8
+## objective:  -33.75285  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.16
+## step size given to GGDescent/Nesterov: 0.16
+## objective:  -33.75331  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.032
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -33.75343  ( 200 iterations, max step size: 0.00128 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -33.75347  ( 200 iterations, max step size: 0.00128 )
+## MM converged in 7 steps!</code></pre>
+<pre class="r"><code>spcor_mat &lt;- cov2cor(mm$Sigma)</code></pre>
+<pre class="r"><code>#devtools::install_github(&quot;kkdey/CorShrink&quot;)
+#library(CorShrink)
+#sessionInfo()
+cov_mat &lt;- cov(data);
+system.time(strimmer_sample &lt;- corpcor::cov.shrink(data))</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda.var (variance vector): 1 
+## 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.8107</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(glasso_sample_005 &lt;- glasso::glasso(cov_mat, rho = 0.05))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.434   0.001   0.436</code></pre>
+<pre class="r"><code>system.time(glasso_sample_05 &lt;- glasso::glasso(cov_mat, rho = 0.5))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.044   0.000   0.044</code></pre>
+<pre class="r"><code>system.time(glasso_sample_1 &lt;- glasso::glasso(cov_mat, rho = 1))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.004   0.000   0.004</code></pre>
+<pre class="r"><code>system.time(glasso_sample_10 &lt;- glasso::glasso(cov_mat, rho = 10))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(cov_sample_ML &lt;-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 10)))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre><code>##    user  system elapsed 
+##   4.921   0.087   5.031</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0(&quot;sample corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-59-1.png" width="576" /></p>
+<pre class="r"><code>par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;corshrink: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0(&quot;glasso 0.05: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0(&quot;glasso 0.5: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-60-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0(&quot;spcov:&quot;, expression(lambda), &quot;=&quot;, lam), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-61-1.png" width="576" /></p>
+</div>
+<div id="n-50-p100-2" class="section level3">
+<h3>n = 50, P=100</h3>
+<pre class="r"><code>n &lt;- 50
+P &lt;- 100
+ll &lt;- DM_graph(n,P, para = 0.5)</code></pre>
+<pre><code>## Generating data from the multivariate normal distribution with the random graph structure....</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-62-1.png" width="672" /></p>
+<pre><code>## done.</code></pre>
+<pre class="r"><code>data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>Pat &lt;- matrix(1, P, P)
+diag(Pat) &lt;- 0</code></pre>
+<pre class="r"><code>lam &lt;- 0.06
+step.size &lt;- 100
+tol &lt;- 1e-4
+covmat &lt;- cov(data)
+mm &lt;- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)</code></pre>
+<pre><code>## ---
+## using Nesterov, backtracking line search
+## ---
+## objective:  83.33297
+## step size given to GGDescent/Nesterov: 100
+## objective:  38.95256  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 20
+## step size given to GGDescent/Nesterov: 20
+## objective:  38.11965  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 4
+## step size given to GGDescent/Nesterov: 4
+## objective:  38.06355  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 0.8
+## step size given to GGDescent/Nesterov: 0.8
+## objective:  38.05627  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 0.16
+## step size given to GGDescent/Nesterov: 0.16
+## objective:  38.05473  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 0.032
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  38.05431  ( 200 iterations, max step size: 0.0064 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  38.05418  ( 200 iterations, max step size: 0.0064 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  38.05414  ( 200 iterations, max step size: 0.0064 )
+## MM converged in 8 steps!</code></pre>
+<pre class="r"><code>spcor_mat &lt;- cov2cor(mm$Sigma)</code></pre>
+<pre class="r"><code>#devtools::install_github(&quot;kkdey/CorShrink&quot;)
+#library(CorShrink)
+#sessionInfo()
+cov_mat &lt;- cov(data);
+system.time(strimmer_sample &lt;- corpcor::cov.shrink(data))</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda.var (variance vector): 1 
+## 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.6314</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.004   0.001   0.005</code></pre>
+<pre class="r"><code>system.time(glasso_sample_005 &lt;- glasso::glasso(cov_mat, rho = 0.05))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.166   0.000   0.167</code></pre>
+<pre class="r"><code>system.time(glasso_sample_05 &lt;- glasso::glasso(cov_mat, rho = 0.5))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(glasso_sample_1 &lt;- glasso::glasso(cov_mat, rho = 1))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(glasso_sample_10 &lt;- glasso::glasso(cov_mat, rho = 10))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(cov_sample_ML &lt;-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 10)))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre><code>##    user  system elapsed 
+##   6.790   0.159   6.976</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0(&quot;sample corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-67-1.png" width="576" /></p>
+<pre class="r"><code>par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;corshrink: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0(&quot;glasso 0.05: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0(&quot;glasso 0.5: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-68-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0(&quot;spcov:&quot;, expression(lambda), &quot;=&quot;, lam), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-69-1.png" width="576" /></p>
+</div>
+<div id="n-5-p100-2" class="section level3">
+<h3>n = 5, P=100</h3>
+<pre class="r"><code>n &lt;- 5
+P &lt;- 100
+ll &lt;- DM_graph(n,P, para = 0.5)</code></pre>
+<pre><code>## Generating data from the multivariate normal distribution with the random graph structure....</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-70-1.png" width="672" /></p>
+<pre><code>## done.</code></pre>
+<pre class="r"><code>data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>Pat &lt;- matrix(1, P, P)
+diag(Pat) &lt;- 0</code></pre>
+<pre class="r"><code>lam &lt;- 0.06
+step.size &lt;- 100
+tol &lt;- 1e-4
+covmat &lt;- cov(data)
+mm &lt;- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)</code></pre>
+<pre><code>## ---
+## using Nesterov, backtracking line search
+## ---
+## objective:  139.4486
+## step size given to GGDescent/Nesterov: 100
+## objective:  -59.01845  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 20
+## step size given to GGDescent/Nesterov: 20
+## objective:  -60.15098  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 4
+## step size given to GGDescent/Nesterov: 4
+## objective:  -60.15814  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.8
+## step size given to GGDescent/Nesterov: 0.8
+## objective:  -60.15961  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.16
+## step size given to GGDescent/Nesterov: 0.16
+## objective:  -60.16001  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.032
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -60.16012  ( 200 iterations, max step size: 0.00128 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -60.16015  ( 200 iterations, max step size: 0.00128 )
+## MM converged in 7 steps!</code></pre>
+<pre class="r"><code>spcor_mat &lt;- cov2cor(mm$Sigma)</code></pre>
+<pre class="r"><code>#devtools::install_github(&quot;kkdey/CorShrink&quot;)
+#library(CorShrink)
+#sessionInfo()
+cov_mat &lt;- cov(data);
+system.time(strimmer_sample &lt;- corpcor::cov.shrink(data))</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda.var (variance vector): 0.8093 
+## 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.7321</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(glasso_sample_005 &lt;- glasso::glasso(cov_mat, rho = 0.05))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.628   0.001   0.631</code></pre>
+<pre class="r"><code>system.time(glasso_sample_05 &lt;- glasso::glasso(cov_mat, rho = 0.5))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.061   0.000   0.062</code></pre>
+<pre class="r"><code>system.time(glasso_sample_1 &lt;- glasso::glasso(cov_mat, rho = 1))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.014   0.000   0.015</code></pre>
+<pre class="r"><code>system.time(glasso_sample_10 &lt;- glasso::glasso(cov_mat, rho = 10))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(cov_sample_ML &lt;-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 10)))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre><code>##    user  system elapsed 
+##   2.633   0.059   2.718</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0(&quot;sample corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-75-1.png" width="576" /></p>
+<pre class="r"><code>par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;corshrink: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0(&quot;glasso 0.05: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0(&quot;glasso 0.5: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-76-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0(&quot;spcov:&quot;, expression(lambda), &quot;=&quot;, lam), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-77-1.png" width="576" /></p>
+</div>
+</div>
+<div id="dm-graph-sparse-edors-renyi-graph" class="section level2">
+<h2>DM graph (sparse Edors Renyi graph)</h2>
+<div id="n-10-p100-3" class="section level3">
+<h3>n = 10, P=100</h3>
+<pre class="r"><code>n &lt;- 10
+P &lt;- 100
+ll &lt;- DM_graph(n,P)</code></pre>
+<pre><code>## Generating data from the multivariate normal distribution with the random graph structure....</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-78-1.png" width="672" /></p>
+<pre><code>## done.</code></pre>
+<pre class="r"><code>data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(corSigma),
+      col=col, main=paste0(&quot;pop corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-79-1.png" width="576" /></p>
+<pre class="r"><code>Pat &lt;- matrix(1, P, P)
+diag(Pat) &lt;- 0</code></pre>
+<pre class="r"><code>lam &lt;- 0.06
+step.size &lt;- 100
+tol &lt;- 1e-4
+covmat &lt;- cov(data)
+mm &lt;- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)</code></pre>
+<pre><code>## ---
+## using Nesterov, backtracking line search
+## ---
+## objective:  58.33501
+## step size given to GGDescent/Nesterov: 100
+## objective:  -40.33554  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 20
+## step size given to GGDescent/Nesterov: 20
+## objective:  -40.93009  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 4
+## step size given to GGDescent/Nesterov: 4
+## objective:  -40.93965  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.8
+## step size given to GGDescent/Nesterov: 0.8
+## objective:  -40.94105  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.16
+## step size given to GGDescent/Nesterov: 0.16
+## objective:  -40.94141  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.032
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -40.94151  ( 200 iterations, max step size: 0.00128 )
+## MM converged in 6 steps!</code></pre>
+<pre class="r"><code>spcor_mat &lt;- cov2cor(mm$Sigma)</code></pre>
+<pre class="r"><code>#devtools::install_github(&quot;kkdey/CorShrink&quot;)
+#library(CorShrink)
+#sessionInfo()
+cov_mat &lt;- cov(data);
+system.time(strimmer_sample &lt;- corpcor::cov.shrink(data))</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda.var (variance vector): 0.78 
+## 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.9079</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(glasso_sample_005 &lt;- glasso::glasso(cov_mat, rho = 0.05))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.359   0.001   0.362</code></pre>
+<pre class="r"><code>system.time(glasso_sample_05 &lt;- glasso::glasso(cov_mat, rho = 0.5))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.031   0.000   0.030</code></pre>
+<pre class="r"><code>system.time(glasso_sample_1 &lt;- glasso::glasso(cov_mat, rho = 1))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(glasso_sample_10 &lt;- glasso::glasso(cov_mat, rho = 10))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(cov_sample_ML &lt;-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 10)))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre><code>##    user  system elapsed 
+##   2.292   0.052   2.351</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0(&quot;sample corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-84-1.png" width="576" /></p>
+<pre class="r"><code>par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;corshrink: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0(&quot;glasso 0.05: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0(&quot;glasso 0.5: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-85-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0(&quot;spcov:&quot;, expression(lambda), &quot;=&quot;, lam), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-86-1.png" width="576" /></p>
+</div>
+<div id="n-50-p100-3" class="section level3">
+<h3>n = 50, P=100</h3>
+<pre class="r"><code>n &lt;- 50
+P &lt;- 100
+ll &lt;- DM_graph(n,P)</code></pre>
+<pre><code>## Generating data from the multivariate normal distribution with the random graph structure....</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-87-1.png" width="672" /></p>
+<pre><code>## done.</code></pre>
+<pre class="r"><code>data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>Pat &lt;- matrix(1, P, P)
+diag(Pat) &lt;- 0</code></pre>
+<pre class="r"><code>lam &lt;- 0.06
+step.size &lt;- 100
+tol &lt;- 1e-4
+covmat &lt;- cov(data)
+mm &lt;- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)</code></pre>
+<pre><code>## ---
+## using Nesterov, backtracking line search
+## ---
+## objective:  81.1509
+## step size given to GGDescent/Nesterov: 100
+## objective:  45.18801  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 20
+## step size given to GGDescent/Nesterov: 20
+## objective:  44.28764  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 4
+## step size given to GGDescent/Nesterov: 4
+## objective:  44.22638  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 0.8
+## step size given to GGDescent/Nesterov: 0.8
+## objective:  44.21871  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 0.16
+## step size given to GGDescent/Nesterov: 0.16
+## objective:  44.2171  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 0.032
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  44.21666  ( 200 iterations, max step size: 0.0064 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  44.21652  ( 200 iterations, max step size: 0.0064 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  44.21647  ( 200 iterations, max step size: 0.0064 )
+## MM converged in 8 steps!</code></pre>
+<pre class="r"><code>spcor_mat &lt;- cov2cor(mm$Sigma)</code></pre>
+<pre class="r"><code>#devtools::install_github(&quot;kkdey/CorShrink&quot;)
+#library(CorShrink)
+#sessionInfo()
+cov_mat &lt;- cov(data);
+system.time(strimmer_sample &lt;- corpcor::cov.shrink(data))</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda.var (variance vector): 0.8871 
+## 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.8178</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.005   0.000   0.004</code></pre>
+<pre class="r"><code>system.time(glasso_sample_005 &lt;- glasso::glasso(cov_mat, rho = 0.05))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.163   0.000   0.163</code></pre>
+<pre class="r"><code>system.time(glasso_sample_05 &lt;- glasso::glasso(cov_mat, rho = 0.5))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(glasso_sample_1 &lt;- glasso::glasso(cov_mat, rho = 1))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(glasso_sample_10 &lt;- glasso::glasso(cov_mat, rho = 10))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(cov_sample_ML &lt;-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 10)))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre><code>##    user  system elapsed 
+##   3.604   0.095   3.712</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0(&quot;sample corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-92-1.png" width="576" /></p>
+<pre class="r"><code>par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;corshrink: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0(&quot;glasso 0.05: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0(&quot;glasso 0.5: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-93-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0(&quot;spcov:&quot;, expression(lambda), &quot;=&quot;, lam), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-94-1.png" width="576" /></p>
+</div>
+<div id="n-5-p100-3" class="section level3">
+<h3>n = 5, P=100</h3>
+<pre class="r"><code>n &lt;- 5
+P &lt;- 100
+ll &lt;- DM_graph(n,P)</code></pre>
+<pre><code>## Generating data from the multivariate normal distribution with the random graph structure....</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-95-1.png" width="672" /></p>
+<pre><code>## done.</code></pre>
+<pre class="r"><code>data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>Pat &lt;- matrix(1, P, P)
+diag(Pat) &lt;- 0</code></pre>
+<pre class="r"><code>lam &lt;- 0.06
+step.size &lt;- 100
+tol &lt;- 1e-4
+covmat &lt;- cov(data)
+mm &lt;- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)</code></pre>
+<pre><code>## ---
+## using Nesterov, backtracking line search
+## ---
+## objective:  113.7445
+## step size given to GGDescent/Nesterov: 100
+## objective:  -59.55925  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 20
+## step size given to GGDescent/Nesterov: 20
+## objective:  -62.38439  ( 200 iterations, max step size: 0.032 )
+## Reducing step size to 4
+## step size given to GGDescent/Nesterov: 4
+## objective:  -62.40129  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.8
+## step size given to GGDescent/Nesterov: 0.8
+## objective:  -62.40288  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.16
+## step size given to GGDescent/Nesterov: 0.16
+## objective:  -62.40329  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.032
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -62.4034  ( 200 iterations, max step size: 0.00128 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -62.40343  ( 200 iterations, max step size: 0.00128 )
+## MM converged in 7 steps!</code></pre>
+<pre class="r"><code>spcor_mat &lt;- cov2cor(mm$Sigma)</code></pre>
+<pre class="r"><code>#devtools::install_github(&quot;kkdey/CorShrink&quot;)
+#library(CorShrink)
+#sessionInfo()
+cov_mat &lt;- cov(data);
+system.time(strimmer_sample &lt;- corpcor::cov.shrink(data))</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda.var (variance vector): 0.8824 
+## 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.7539</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(glasso_sample_005 &lt;- glasso::glasso(cov_mat, rho = 0.05))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.666   0.002   0.673</code></pre>
+<pre class="r"><code>system.time(glasso_sample_05 &lt;- glasso::glasso(cov_mat, rho = 0.5))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.057   0.000   0.056</code></pre>
+<pre class="r"><code>system.time(glasso_sample_1 &lt;- glasso::glasso(cov_mat, rho = 1))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.009   0.000   0.009</code></pre>
+<pre class="r"><code>system.time(glasso_sample_10 &lt;- glasso::glasso(cov_mat, rho = 10))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(cov_sample_ML &lt;-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 10)))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre><code>##    user  system elapsed 
+##   1.860   0.048   1.914</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0(&quot;sample corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-100-1.png" width="576" /></p>
+<pre class="r"><code>par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;corshrink: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0(&quot;glasso 0.05: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0(&quot;glasso 0.5: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-101-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0(&quot;spcov:&quot;, expression(lambda), &quot;=&quot;, lam), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-102-1.png" width="576" /></p>
+</div>
+</div>
+<div id="dm-graph-hub-graph" class="section level2">
+<h2>DM graph (hub graph)</h2>
+<div id="n-10-p100-4" class="section level3">
+<h3>n = 10, P=100</h3>
+<pre class="r"><code>n &lt;- 10
+P &lt;- 100
+ll &lt;- DM_graph(n,P,g_type = &quot;hub&quot;, para = 5)</code></pre>
+<pre><code>## Generating data from the multivariate normal distribution with the hub graph structure....</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-103-1.png" width="672" /></p>
+<pre><code>## done.</code></pre>
+<pre class="r"><code>data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(corSigma),
+      col=col, main=paste0(&quot;pop corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-104-1.png" width="576" /></p>
+<pre class="r"><code>Pat &lt;- matrix(1, P, P)
+diag(Pat) &lt;- 0</code></pre>
+<pre class="r"><code>lam &lt;- 0.06
+step.size &lt;- 100
+tol &lt;- 1e-4
+covmat &lt;- cov(data)
+mm &lt;- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)</code></pre>
+<pre><code>## ---
+## using Nesterov, backtracking line search
+## ---
+## objective:  72.53971
+## step size given to GGDescent/Nesterov: 100
+## objective:  -37.13113  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 20
+## step size given to GGDescent/Nesterov: 20
+## objective:  -38.34797  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 4
+## step size given to GGDescent/Nesterov: 4
+## objective:  -38.36321  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.8
+## step size given to GGDescent/Nesterov: 0.8
+## objective:  -38.3649  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.16
+## step size given to GGDescent/Nesterov: 0.16
+## objective:  -38.3653  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.032
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -38.36541  ( 200 iterations, max step size: 0.00128 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -38.36544  ( 200 iterations, max step size: 0.00128 )
+## MM converged in 7 steps!</code></pre>
+<pre class="r"><code>spcor_mat &lt;- cov2cor(mm$Sigma)</code></pre>
+<pre class="r"><code>#devtools::install_github(&quot;kkdey/CorShrink&quot;)
+#library(CorShrink)
+#sessionInfo()
+cov_mat &lt;- cov(data);
+system.time(strimmer_sample &lt;- corpcor::cov.shrink(data))</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda.var (variance vector): 0.982 
+## 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.8634</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(glasso_sample_005 &lt;- glasso::glasso(cov_mat, rho = 0.05))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.388   0.001   0.390</code></pre>
+<pre class="r"><code>system.time(glasso_sample_05 &lt;- glasso::glasso(cov_mat, rho = 0.5))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.032   0.000   0.034</code></pre>
+<pre class="r"><code>system.time(glasso_sample_1 &lt;- glasso::glasso(cov_mat, rho = 1))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(glasso_sample_10 &lt;- glasso::glasso(cov_mat, rho = 10))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(cov_sample_ML &lt;-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 10)))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre><code>##    user  system elapsed 
+##   1.965   0.050   2.053</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0(&quot;sample corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-109-1.png" width="576" /></p>
+<pre class="r"><code>par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;corshrink: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0(&quot;glasso 0.05: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0(&quot;glasso 0.5: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-110-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0(&quot;spcov:&quot;, expression(lambda), &quot;=&quot;, lam), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-111-1.png" width="576" /></p>
+</div>
+<div id="n-50-p100-4" class="section level3">
+<h3>n = 50, P=100</h3>
+<pre class="r"><code>n &lt;- 50
+P &lt;- 100
+ll &lt;- DM_graph(n,P,g_type = &quot;hub&quot;, para = 5)</code></pre>
+<pre><code>## Generating data from the multivariate normal distribution with the hub graph structure....</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-112-1.png" width="672" /></p>
+<pre><code>## done.</code></pre>
+<pre class="r"><code>data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>Pat &lt;- matrix(1, P, P)
+diag(Pat) &lt;- 0</code></pre>
+<pre class="r"><code>lam &lt;- 0.06
+step.size &lt;- 100
+tol &lt;- 1e-4
+covmat &lt;- cov(data)
+mm &lt;- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)</code></pre>
+<pre><code>## ---
+## using Nesterov, backtracking line search
+## ---
+## objective:  77.0732
+## step size given to GGDescent/Nesterov: 100
+## objective:  40.91093  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 20
+## step size given to GGDescent/Nesterov: 20
+## objective:  40.05197  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 4
+## step size given to GGDescent/Nesterov: 4
+## objective:  39.99288  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 0.8
+## step size given to GGDescent/Nesterov: 0.8
+## objective:  39.98539  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 0.16
+## step size given to GGDescent/Nesterov: 0.16
+## objective:  39.98384  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 0.032
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  39.98342  ( 200 iterations, max step size: 0.0064 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  39.9833  ( 200 iterations, max step size: 0.0064 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  39.98326  ( 200 iterations, max step size: 0.0064 )
+## MM converged in 8 steps!</code></pre>
+<pre class="r"><code>spcor_mat &lt;- cov2cor(mm$Sigma)</code></pre>
+<pre class="r"><code>#devtools::install_github(&quot;kkdey/CorShrink&quot;)
+#library(CorShrink)
+#sessionInfo()
+cov_mat &lt;- cov(data);
+system.time(strimmer_sample &lt;- corpcor::cov.shrink(data))</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda.var (variance vector): 1 
+## 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.7481</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.005   0.000   0.005</code></pre>
+<pre class="r"><code>system.time(glasso_sample_005 &lt;- glasso::glasso(cov_mat, rho = 0.05))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.167   0.001   0.172</code></pre>
+<pre class="r"><code>system.time(glasso_sample_05 &lt;- glasso::glasso(cov_mat, rho = 0.5))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(glasso_sample_1 &lt;- glasso::glasso(cov_mat, rho = 1))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.003   0.000   0.004</code></pre>
+<pre class="r"><code>system.time(glasso_sample_10 &lt;- glasso::glasso(cov_mat, rho = 10))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(cov_sample_ML &lt;-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 10)))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre><code>##    user  system elapsed 
+##   6.101   0.174   6.458</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0(&quot;sample corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-117-1.png" width="576" /></p>
+<pre class="r"><code>par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;corshrink: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0(&quot;glasso 0.05: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0(&quot;glasso 0.5: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-118-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0(&quot;spcov:&quot;, expression(lambda), &quot;=&quot;, lam), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-119-1.png" width="576" /></p>
+</div>
+<div id="n-5-p100-4" class="section level3">
+<h3>n = 5, P=100</h3>
+<pre class="r"><code>n &lt;- 5
+P &lt;- 100
+ll &lt;- DM_graph(n,P,g_type = &quot;hub&quot;, para = 5)</code></pre>
+<pre><code>## Generating data from the multivariate normal distribution with the hub graph structure....</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-120-1.png" width="672" /></p>
+<pre><code>## done.</code></pre>
+<pre class="r"><code>data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>Pat &lt;- matrix(1, P, P)
+diag(Pat) &lt;- 0</code></pre>
+<pre class="r"><code>lam &lt;- 0.06
+step.size &lt;- 100
+tol &lt;- 1e-4
+covmat &lt;- cov(data)
+mm &lt;- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)</code></pre>
+<pre><code>## ---
+## using Nesterov, backtracking line search
+## ---
+## objective:  95.50814
+## step size given to GGDescent/Nesterov: 100
+## objective:  -62.61963  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 20
+## step size given to GGDescent/Nesterov: 20
+## objective:  -65.07446  ( 200 iterations, max step size: 0.032 )
+## Reducing step size to 4
+## step size given to GGDescent/Nesterov: 4
+## objective:  -65.09053  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.8
+## step size given to GGDescent/Nesterov: 0.8
+## objective:  -65.09216  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.16
+## step size given to GGDescent/Nesterov: 0.16
+## objective:  -65.09257  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.032
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -65.09269  ( 200 iterations, max step size: 0.00128 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -65.09272  ( 200 iterations, max step size: 0.00128 )
+## MM converged in 7 steps!</code></pre>
+<pre class="r"><code>spcor_mat &lt;- cov2cor(mm$Sigma)</code></pre>
+<pre class="r"><code>#devtools::install_github(&quot;kkdey/CorShrink&quot;)
+#library(CorShrink)
+#sessionInfo()
+cov_mat &lt;- cov(data);
+system.time(strimmer_sample &lt;- corpcor::cov.shrink(data))</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda.var (variance vector): 0.7877 
+## 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.7607</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(glasso_sample_005 &lt;- glasso::glasso(cov_mat, rho = 0.05))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.572   0.004   0.583</code></pre>
+<pre class="r"><code>system.time(glasso_sample_05 &lt;- glasso::glasso(cov_mat, rho = 0.5))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.054   0.000   0.054</code></pre>
+<pre class="r"><code>system.time(glasso_sample_1 &lt;- glasso::glasso(cov_mat, rho = 1))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.007   0.000   0.007</code></pre>
+<pre class="r"><code>system.time(glasso_sample_10 &lt;- glasso::glasso(cov_mat, rho = 10))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(cov_sample_ML &lt;-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 10)))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre><code>##    user  system elapsed 
+##   1.801   0.050   1.888</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0(&quot;sample corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-125-1.png" width="576" /></p>
+<pre class="r"><code>par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;corshrink: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0(&quot;glasso 0.05: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0(&quot;glasso 0.5: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-126-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0(&quot;spcov:&quot;, expression(lambda), &quot;=&quot;, lam), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-127-1.png" width="576" /></p>
+</div>
+</div>
+<div id="dm-graph-scale-free-graph" class="section level2">
+<h2>DM graph (scale free graph)</h2>
+<div id="n-10-p100-5" class="section level3">
+<h3>n = 10, P=100</h3>
+<pre class="r"><code>n &lt;- 10
+P &lt;- 100
+ll &lt;- DM_graph(n,P,g_type = &quot;scale-free&quot;)</code></pre>
+<pre><code>## Generating data from the multivariate normal distribution with the scale-free graph structure....</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-128-1.png" width="672" /></p>
+<pre><code>## done.</code></pre>
+<pre class="r"><code>data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(corSigma),
+      col=col, main=paste0(&quot;pop corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-129-1.png" width="576" /></p>
+<pre class="r"><code>Pat &lt;- matrix(1, P, P)
+diag(Pat) &lt;- 0</code></pre>
+<pre class="r"><code>lam &lt;- 0.06
+step.size &lt;- 100
+tol &lt;- 1e-4
+covmat &lt;- cov(data)
+mm &lt;- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)</code></pre>
+<pre><code>## ---
+## using Nesterov, backtracking line search
+## ---
+## objective:  71.9578
+## step size given to GGDescent/Nesterov: 100
+## objective:  -38.07004  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 20
+## step size given to GGDescent/Nesterov: 20
+## objective:  -38.68548  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 4
+## step size given to GGDescent/Nesterov: 4
+## objective:  -38.69511  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.8
+## step size given to GGDescent/Nesterov: 0.8
+## objective:  -38.69662  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.16
+## step size given to GGDescent/Nesterov: 0.16
+## objective:  -38.697  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.032
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -38.6971  ( 200 iterations, max step size: 0.00128 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -38.69713  ( 200 iterations, max step size: 0.00128 )
+## MM converged in 7 steps!</code></pre>
+<pre class="r"><code>spcor_mat &lt;- cov2cor(mm$Sigma)</code></pre>
+<pre class="r"><code>#devtools::install_github(&quot;kkdey/CorShrink&quot;)
+#library(CorShrink)
+#sessionInfo()
+cov_mat &lt;- cov(data);
+system.time(strimmer_sample &lt;- corpcor::cov.shrink(data))</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda.var (variance vector): 0.6248 
+## 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.8519</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.003   0.000   0.003</code></pre>
+<pre class="r"><code>system.time(glasso_sample_005 &lt;- glasso::glasso(cov_mat, rho = 0.05))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.427   0.003   0.444</code></pre>
+<pre class="r"><code>system.time(glasso_sample_05 &lt;- glasso::glasso(cov_mat, rho = 0.5))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.032   0.000   0.033</code></pre>
+<pre class="r"><code>system.time(glasso_sample_1 &lt;- glasso::glasso(cov_mat, rho = 1))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.003   0.000   0.003</code></pre>
+<pre class="r"><code>system.time(glasso_sample_10 &lt;- glasso::glasso(cov_mat, rho = 10))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(cov_sample_ML &lt;-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 10)))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre><code>##    user  system elapsed 
+##   3.939   0.125   4.203</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0(&quot;sample corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-134-1.png" width="576" /></p>
+<pre class="r"><code>par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;corshrink: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0(&quot;glasso 0.05: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0(&quot;glasso 0.5: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-135-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0(&quot;spcov:&quot;, expression(lambda), &quot;=&quot;, lam), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-136-1.png" width="576" /></p>
+</div>
+<div id="n-50-p100-5" class="section level3">
+<h3>n = 50, P=100</h3>
+<pre class="r"><code>n &lt;- 50
+P &lt;- 100
+ll &lt;- DM_graph(n,P,g_type = &quot;scale-free&quot;)</code></pre>
+<pre><code>## Generating data from the multivariate normal distribution with the scale-free graph structure....</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-137-1.png" width="672" /></p>
+<pre><code>## done.</code></pre>
+<pre class="r"><code>data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>Pat &lt;- matrix(1, P, P)
+diag(Pat) &lt;- 0</code></pre>
+<pre class="r"><code>lam &lt;- 0.06
+step.size &lt;- 100
+tol &lt;- 1e-4
+covmat &lt;- cov(data)
+mm &lt;- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)</code></pre>
+<pre><code>## ---
+## using Nesterov, backtracking line search
+## ---
+## objective:  73.59023
+## step size given to GGDescent/Nesterov: 100
+## objective:  42.85039  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 20
+## step size given to GGDescent/Nesterov: 20
+## objective:  42.00787  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 4
+## step size given to GGDescent/Nesterov: 4
+## objective:  41.94759  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 0.8
+## step size given to GGDescent/Nesterov: 0.8
+## objective:  41.94014  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 0.16
+## step size given to GGDescent/Nesterov: 0.16
+## objective:  41.93864  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 0.032
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  41.93824  ( 200 iterations, max step size: 0.0064 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  41.93812  ( 200 iterations, max step size: 0.0064 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  41.93808  ( 200 iterations, max step size: 0.0064 )
+## MM converged in 8 steps!</code></pre>
+<pre class="r"><code>spcor_mat &lt;- cov2cor(mm$Sigma)</code></pre>
+<pre class="r"><code>#devtools::install_github(&quot;kkdey/CorShrink&quot;)
+#library(CorShrink)
+#sessionInfo()
+cov_mat &lt;- cov(data);
+system.time(strimmer_sample &lt;- corpcor::cov.shrink(data))</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda.var (variance vector): 0.986 
+## 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.8776</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.005   0.001   0.004</code></pre>
+<pre class="r"><code>system.time(glasso_sample_005 &lt;- glasso::glasso(cov_mat, rho = 0.05))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.150   0.000   0.151</code></pre>
+<pre class="r"><code>system.time(glasso_sample_05 &lt;- glasso::glasso(cov_mat, rho = 0.5))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(glasso_sample_1 &lt;- glasso::glasso(cov_mat, rho = 1))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(glasso_sample_10 &lt;- glasso::glasso(cov_mat, rho = 10))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.001   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(cov_sample_ML &lt;-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 10)))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre><code>##    user  system elapsed 
+##   2.724   0.059   2.793</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0(&quot;sample corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-142-1.png" width="576" /></p>
+<pre class="r"><code>par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;corshrink: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0(&quot;glasso 0.05: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0(&quot;glasso 0.5: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-143-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0(&quot;spcov:&quot;, expression(lambda), &quot;=&quot;, lam), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-144-1.png" width="576" /></p>
+</div>
+<div id="n-5-p100-5" class="section level3">
+<h3>n = 5, P=100</h3>
+<pre class="r"><code>n &lt;- 5
+P &lt;- 100
+ll &lt;- DM_graph(n,P,g_type = &quot;scale-free&quot;)</code></pre>
+<pre><code>## Generating data from the multivariate normal distribution with the scale-free graph structure....</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-145-1.png" width="672" /></p>
+<pre><code>## done.</code></pre>
+<pre class="r"><code>data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>Pat &lt;- matrix(1, P, P)
+diag(Pat) &lt;- 0</code></pre>
+<pre class="r"><code>lam &lt;- 0.06
+step.size &lt;- 100
+tol &lt;- 1e-4
+covmat &lt;- cov(data)
+mm &lt;- spcov(Sigma=covmat+0.1*diag(1,P), S=covmat+0.1*diag(1,P), lambda=lam * Pat,step.size=step.size, n.inner.steps=200, thr.inner=0, tol.outer=tol, trace=1)</code></pre>
+<pre><code>## ---
+## using Nesterov, backtracking line search
+## ---
+## objective:  132.092
+## step size given to GGDescent/Nesterov: 100
+## objective:  -56.55613  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 20
+## step size given to GGDescent/Nesterov: 20
+## objective:  -60.26477  ( 200 iterations, max step size: 0.0064 )
+## Reducing step size to 4
+## step size given to GGDescent/Nesterov: 4
+## objective:  -60.28042  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.8
+## step size given to GGDescent/Nesterov: 0.8
+## objective:  -60.28227  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.16
+## step size given to GGDescent/Nesterov: 0.16
+## objective:  -60.28274  ( 200 iterations, max step size: 0.00128 )
+## Reducing step size to 0.032
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -60.28286  ( 200 iterations, max step size: 0.00128 )
+## step size given to GGDescent/Nesterov: 0.032
+## objective:  -60.2829  ( 200 iterations, max step size: 0.00128 )
+## MM converged in 7 steps!</code></pre>
+<pre class="r"><code>spcor_mat &lt;- cov2cor(mm$Sigma)</code></pre>
+<pre class="r"><code>#devtools::install_github(&quot;kkdey/CorShrink&quot;)
+#library(CorShrink)
+#sessionInfo()
+cov_mat &lt;- cov(data);
+system.time(strimmer_sample &lt;- corpcor::cov.shrink(data))</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda.var (variance vector): 0.8478 
+## 
+## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.7522</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.002</code></pre>
+<pre class="r"><code>system.time(glasso_sample_005 &lt;- glasso::glasso(cov_mat, rho = 0.05))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.663   0.002   0.667</code></pre>
+<pre class="r"><code>system.time(glasso_sample_05 &lt;- glasso::glasso(cov_mat, rho = 0.5))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.059   0.000   0.059</code></pre>
+<pre class="r"><code>system.time(glasso_sample_1 &lt;- glasso::glasso(cov_mat, rho = 1))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.012   0.000   0.013</code></pre>
+<pre class="r"><code>system.time(glasso_sample_10 &lt;- glasso::glasso(cov_mat, rho = 10))</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.002   0.000   0.001</code></pre>
+<pre class="r"><code>system.time(cov_sample_ML &lt;-  CorShrinkMatrix(cov2cor(cov_mat), nsamp = matrix(n, P, P), ash.control = list(mixcompdist = &quot;normal&quot;, nullweight = 10)))</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre><code>##    user  system elapsed 
+##   1.758   0.033   1.798</code></pre>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(cov_mat)),
+      col=col, main=paste0(&quot;sample corr: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-150-1.png" width="576" /></p>
+<pre class="r"><code>par(mfrow = c(2,2))
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(strimmer_sample)),
+      col=col, main=paste0(&quot;shafer strimmer: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov_sample_ML$ash_cor_only),
+      col=col, main=paste0(&quot;corshrink: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_005$w)),
+      col=col, main=paste0(&quot;glasso 0.05: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+
+col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(cov2cor(glasso_sample_05$w)),
+      col=col, main=paste0(&quot;glasso 0.5: &quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-151-1.png" width="576" /></p>
+<pre class="r"><code>col=c(rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)))
+image(as.matrix(spcor_mat),
+      col=col, main=paste0(&quot;spcov:&quot;, expression(lambda), &quot;=&quot;, lam), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_dsc_graph_files/figure-html/unnamed-chunk-152-1.png" width="576" /></p>
+</div>
+</div>
+
+<hr>
+<p>
+    This <a href="http://rmarkdown.rstudio.com">R Markdown</a> site was created with <a href="https://github.com/jdblischak/workflowr">workflowr</a>
+</p>
+<hr>
+
+<!-- To enable disqus, uncomment the section below and provide your disqus_shortname -->
+
+<!-- disqus
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'rmarkdown'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+-->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

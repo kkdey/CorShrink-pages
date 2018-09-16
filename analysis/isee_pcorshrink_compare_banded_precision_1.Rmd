@@ -1,0 +1,288 @@
+---
+title: 'Comparison of ISEE and pCorShrink: banded precision 1'
+author: "Kushal K Dey"
+date: "June 27, 2018"
+output: html_document
+---
+
+## Packages
+
+```{r warning=FALSE, message = FALSE}
+require(graphics)
+library(igraph)
+library(MASS) 
+library(Matrix)
+library(corpcor)
+library(corrplot)
+source("isee_all.R") ## ISEE codes
+library(CorShrink)
+```
+
+## Simulation design 
+
+```{r}
+band.mat <- function(a, p, K=1, permu=c(1:p)){
+  ones = rep(1,p)
+  Omega0 = a*ones%*%t(ones)
+  diag(Omega0) = rep(1,p)
+  Omega = 1*band(Omega0,-K,K)
+  Sigma = qr.solve(Omega)
+  Sigma = Sigma*(abs(Sigma)>1e-4)
+  Sigma.half=chol(Sigma)
+  Sigma.half = Sigma.half*(abs(Sigma.half)>1e-4)
+  Sigma = Sigma[permu,permu]
+  Omega = Omega[permu,permu]
+  Sigma.half = Sigma.half[permu,permu]
+  obj = list(Sigma=Sigma, Omega = Omega, Sigma.half = Sigma.half)
+}
+
+make.data <- function(Sigma.half, n, p, seed){
+  set.seed(seed)  
+  
+  X = matrix(rnorm(n*p),n,p)%*%Sigma.half
+  return(X)
+}
+```
+
+## n=50, p = 100
+
+```{r}
+n = 50
+p = 100
+obj = band.mat(a=0.5, p, K = 1)
+Sig.half = obj$Sigma.half
+Ome.true = obj$Omega
+X.mat = make.data(Sig.half, n, p, seed = 1000)
+```
+
+### Original
+
+```{r}
+pcorSigma <- -as.matrix(cov2cor(obj$Omega))
+diag(pcorSigma) <- rep(1, dim(pcorSigma)[1])
+col2 <- c("blue", "white", "red")
+corrplot(pcorSigma, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+```
+
+### ISEE
+
+```{r}
+regfactor = "log"  # or "one", "sqrt"
+npermu = 1         # or >= 2
+sis.use = 0        # or 1, whether to use SIS for screening
+bia.cor = 0        # or 1, whether to apply bias correction for ISEE
+obj.n = isee(X.mat, regfactor, npermu, sis.use, bia.cor = 0) 
+pseemat <- -cov2cor(obj.n$Omega.isee)
+diag(pseemat) <- rep(1, dim(pseemat)[1])
+corrplot(pseemat, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+
+```
+
+### sample correlation ISEE X-tilde
+
+```{r}
+X_tilde_out <- isee.X(X.mat, bia.cor = 0, reg.fac = 1, permu = 1:ncol(X.mat), 
+                      use_slasso = TRUE)
+X_tilde <- X_tilde_out$X.tilde
+
+pStilde <- -cor(X_tilde)
+diag(pStilde) = 1
+corrplot(pStilde, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+```
+
+### pCorShrink + LM 
+
+```{r}
+pcor2 <- pCorShrinkData(X.mat, reg_type = "lm")
+corrplot(pcor2, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+```
+
+### pCorShrink + Lasso
+
+```{r}
+pcor3 <- pCorShrinkData(X.mat, reg_type = "glmnet")
+corrplot(pcor2, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+```
+
+
+### pCorShrink + Ridge 
+
+```{r}
+pcor4 <- pCorShrinkData(X.mat, reg_type = "lm", glmnet_alpha = 0)
+corrplot(pcor4, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+```
+
+
+
+## n=100, p = 100
+
+```{r}
+n = 50
+p = 100
+obj = band.mat(a=0.5, p, K = 1)
+Sig.half = obj$Sigma.half
+Ome.true = obj$Omega
+X.mat = make.data(Sig.half, n, p, seed = 1000)
+```
+
+### Original
+
+```{r}
+pcorSigma <- -as.matrix(cov2cor(obj$Omega))
+diag(pcorSigma) <- rep(1, dim(pcorSigma)[1])
+col2 <- c("blue", "white", "red")
+corrplot(pcorSigma, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+```
+
+### ISEE
+
+```{r}
+regfactor = "log"  # or "one", "sqrt"
+npermu = 1         # or >= 2
+sis.use = 0        # or 1, whether to use SIS for screening
+bia.cor = 0        # or 1, whether to apply bias correction for ISEE
+obj.n = isee(X.mat, regfactor, npermu, sis.use, bia.cor = 0) 
+pseemat <- -cov2cor(obj.n$Omega.isee)
+diag(pseemat) <- rep(1, dim(pseemat)[1])
+corrplot(pseemat, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+
+```
+
+### sample correlation ISEE X-tilde
+
+```{r}
+X_tilde_out <- isee.X(X.mat, bia.cor = 0, reg.fac = 1, permu = 1:ncol(X.mat), 
+                      use_slasso = TRUE)
+X_tilde <- X_tilde_out$X.tilde
+
+pStilde <- -cor(X_tilde)
+diag(pStilde) = 1
+corrplot(pStilde, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+```
+
+### pCorShrink + LM 
+
+```{r}
+pcor2 <- pCorShrinkData(X.mat, reg_type = "lm")
+corrplot(pcor2, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+```
+
+### pCorShrink + Lasso
+
+```{r}
+pcor3 <- pCorShrinkData(X.mat, reg_type = "glmnet")
+corrplot(pcor2, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+```
+
+
+### pCorShrink + Ridge 
+
+```{r}
+pcor4 <- pCorShrinkData(X.mat, reg_type = "lm", glmnet_alpha = 0)
+corrplot(pcor4, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+```
+
+
+## n=1000, p = 100
+
+```{r}
+n = 50
+p = 100
+obj = band.mat(a=0.5, p, K = 1)
+Sig.half = obj$Sigma.half
+Ome.true = obj$Omega
+X.mat = make.data(Sig.half, n, p, seed = 1000)
+```
+
+### Original
+
+```{r}
+pcorSigma <- -as.matrix(cov2cor(obj$Omega))
+diag(pcorSigma) <- rep(1, dim(pcorSigma)[1])
+col2 <- c("blue", "white", "red")
+corrplot(pcorSigma, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+```
+
+### ISEE
+
+```{r}
+regfactor = "log"  # or "one", "sqrt"
+npermu = 1         # or >= 2
+sis.use = 0        # or 1, whether to use SIS for screening
+bia.cor = 0        # or 1, whether to apply bias correction for ISEE
+obj.n = isee(X.mat, regfactor, npermu, sis.use, bia.cor = 0) 
+pseemat <- -cov2cor(obj.n$Omega.isee)
+diag(pseemat) <- rep(1, dim(pseemat)[1])
+corrplot(pseemat, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+
+```
+
+### sample correlation ISEE X-tilde
+
+```{r}
+X_tilde_out <- isee.X(X.mat, bia.cor = 0, reg.fac = 1, permu = 1:ncol(X.mat), 
+                      use_slasso = TRUE)
+X_tilde <- X_tilde_out$X.tilde
+
+pStilde <- -cor(X_tilde)
+diag(pStilde) = 1
+corrplot(pStilde, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+```
+
+### pCorShrink + LM 
+
+```{r}
+pcor2 <- pCorShrinkData(X.mat, reg_type = "lm")
+corrplot(pcor2, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+```
+
+### pCorShrink + Lasso
+
+```{r}
+pcor3 <- pCorShrinkData(X.mat, reg_type = "glmnet")
+corrplot(pcor2, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+```
+
+
+### pCorShrink + Ridge 
+
+```{r}
+pcor4 <- pCorShrinkData(X.mat, reg_type = "lm", glmnet_alpha = 0)
+corrplot(pcor4, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+```

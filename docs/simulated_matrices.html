@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Kushal K Dey" />
+
+
+<title>Simulated correlation matrices</title>
+
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+<link rel="stylesheet" href="cosmo.css" type="text/css" />
+
+</head>
+
+<body>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:100,300,400,600" rel="stylesheet" type="text/css">
+    <link href="../docs/cosmo.css" rel="stylesheet">
+    <link href="../docs/cosmo.min.css" rel="stylesheet">
+</head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="../docs/bootstrap/js/bootstrap.min.js"></script>
+
+<body>
+
+<div class = "nav" align = "middle">
+<div class= "p1"></div>
+<p>
+  <a class="btn btn-large btn btn-primary" type="button" href = "index.html">CorShrink</a>
+  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow.html">HOME</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow_project.html">WORKFLOW</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "about.html">METHODS</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink">SOFTWARE</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "license.html">LICENSE</a>
+   &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink-pages">GITHUB</a>
+ </p>
+</div>
+<!-- <div class="nav">
+  <a href="index.html">Home page</a> &nbsp &nbsp
+  <a href="musings.html">Musings</a> &nbsp &nbsp
+  <a href="town.html">My town</a> &nbsp &nbsp
+  <a href="links.html">Links</a>
+</div> -->
+
+<!-- Main content -->
+</body>
+</html>
+
+
+<h1 class="title toc-ignore">Simulated correlation matrices</h1>
+<h4 class="author"><em>Kushal K Dey</em></h4>
+<h4 class="date"><em>2/23/2018</em></h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#hub-matrix">Hub Matrix</a></li>
+<li><a href="#toeplitz-matrix">Toeplitz Matrix</a></li>
+<li><a href="#banded-sparse-matrix">Banded Sparse matrix</a></li>
+</ul>
+</div>
+
+<p>In this script, we plot the correlation and precision matrices corresponding to which, we have run the simulations.</p>
+<pre class="r"><code>library(ggplot2)
+library(corrplot)</code></pre>
+<pre><code>## corrplot 0.84 loaded</code></pre>
+<pre class="r"><code>library(Matrix)
+library(gridExtra)
+library(corpcor)</code></pre>
+<div id="hub-matrix" class="section level2">
+<h2>Hub Matrix</h2>
+<pre class="r"><code>col2 &lt;- c(&quot;blue&quot;, &quot;white&quot;, &quot;red&quot;)
+block &lt;- 10
+mat &lt;- 0.3*diag(1,block) + 0.7*rep(1,block) %*% t(rep(1, block))
+Sigma &lt;-   bdiag(mat, mat, mat, mat, mat, mat, mat, mat, mat, mat)
+corSigma &lt;- cov2cor(Sigma)
+icorSigma &lt;- cov2cor(solve(corSigma))</code></pre>
+<pre class="r"><code>corrplot((as.matrix(corSigma)), diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = &quot;td&quot;, tl.cex = 0.2, tl.col = &quot;black&quot;,
+         rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,
+         method = &quot;color&quot;, type = &quot;upper&quot;)</code></pre>
+<p><img src="simulated_matrices_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<pre class="r"><code>corrplot((as.matrix(icorSigma)), diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = &quot;td&quot;, tl.cex = 0.2, tl.col = &quot;black&quot;,
+         rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,
+         method = &quot;color&quot;, type = &quot;upper&quot;)</code></pre>
+<p><img src="simulated_matrices_files/figure-html/unnamed-chunk-3-2.png" width="672" /></p>
+</div>
+<div id="toeplitz-matrix" class="section level2">
+<h2>Toeplitz Matrix</h2>
+<pre class="r"><code>DM_toeplitz = function(n,P){
+  library(&quot;MASS&quot;)
+  index1=sort(sample(seq(1:n),(n/2)))
+  index2=seq(1:n)[-index1]
+  Sigmatp=function(P){
+    a=array(0,dim=c(P,P))
+    for(i in 1:P){
+      for(j in 1:P){
+        a[i,j]=max(1-0.1*(abs(i-j)),0)
+      }
+    }
+    return(a)
+  }
+  Sigma = Sigmatp(P)
+  data = mvrnorm(n,rep(0,P),Sigma)
+  Xtest = data[index2,]
+  Xtrain = data[index1,]
+  Omega = solve(Sigma)
+  return(list(Xtrain = Xtrain, Xtest = Xtest, Sigma = Sigma))
+}
+
+n &lt;- 50
+P &lt;- 100
+ll &lt;- DM_toeplitz(n=n, P=P)
+corSigma &lt;- cov2cor(ll$Sigma)
+icorSigma &lt;- cov2cor(solve(corSigma))</code></pre>
+<pre class="r"><code>corrplot((as.matrix(corSigma)), diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = &quot;td&quot;, tl.cex = 0.2, tl.col = &quot;black&quot;,
+         rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,
+         method = &quot;color&quot;, type = &quot;upper&quot;)</code></pre>
+<p><img src="simulated_matrices_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<pre class="r"><code>corrplot((as.matrix(icorSigma)), diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = &quot;td&quot;, tl.cex = 0.2, tl.col = &quot;black&quot;,
+         rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,
+         method = &quot;color&quot;, type = &quot;upper&quot;)</code></pre>
+<p><img src="simulated_matrices_files/figure-html/unnamed-chunk-5-2.png" width="672" /></p>
+</div>
+<div id="banded-sparse-matrix" class="section level2">
+<h2>Banded Sparse matrix</h2>
+<pre class="r"><code>diags &lt;- list()
+diags[[1]] &lt;- rep(1, 100)
+diags[[2]] &lt;- rep(-0.5, 100)
+Kinv &lt;- bandSparse(100, k = -(0:1), diag = diags, symm = TRUE)
+K &lt;- solve(Kinv)
+corSigma &lt;- cov2cor(K)
+icorSigma &lt;- cov2cor(solve(corSigma))</code></pre>
+<pre class="r"><code>corrplot((as.matrix(corSigma)), diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = &quot;td&quot;, tl.cex = 0.2, tl.col = &quot;black&quot;,
+         rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,
+         method = &quot;color&quot;, type = &quot;upper&quot;)</code></pre>
+<p><img src="simulated_matrices_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<pre class="r"><code>corrplot((as.matrix(icorSigma)), diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = &quot;td&quot;, tl.cex = 0.2, tl.col = &quot;black&quot;,
+         rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,
+         method = &quot;color&quot;, type = &quot;upper&quot;)</code></pre>
+<p><img src="simulated_matrices_files/figure-html/unnamed-chunk-7-2.png" width="672" /></p>
+</div>
+
+<hr>
+<p>
+    This <a href="http://rmarkdown.rstudio.com">R Markdown</a> site was created with <a href="https://github.com/jdblischak/workflowr">workflowr</a>
+</p>
+<hr>
+
+<!-- To enable disqus, uncomment the section below and provide your disqus_shortname -->
+
+<!-- disqus
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'rmarkdown'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+-->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

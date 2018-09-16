@@ -1,0 +1,208 @@
+---
+title: 'CorShrink on Ebony issues : 1968'
+author: "Kushal K Dey"
+date: "5/30/2018"
+output: html_document
+---
+
+We look at CorShrink similarity measures and corresponding rankings of words and compare
+them with the empirical similarity and rankings without the **CorShrink** model. We pick two topic words to focus on - *martin luther king*, *vietnam* and  *civil rights*
+and then perform bagging on all the different articles.
+
+## Martin Luther King 
+
+```{r}
+mat <- get(load("../output/word2vec_Ebony_newspapers/martin_luther_king_corshrink_newspapers.rda"))
+cor_original <- mat$original
+corshrink_mat <- mat$corshrink
+```
+
+
+```{r}
+word_frequencies_mat <- get(load("../output/word2vec_Ebony/word_frequencies.rda"))
+word_presence_absence <- word_frequencies_mat
+word_presence_absence[word_presence_absence > 0] = 1
+```
+
+```{r}
+matched_word_frequencies <- word_presence_absence[, match(rownames(corshrink_mat), colnames(word_presence_absence))]
+```
+
+```{r}
+num_occurrences_words <- colSums(matched_word_frequencies)
+```
+
+```{r}
+num_occurrence_matrix <- sapply(num_occurrences_words, function(l) pmin(l, num_occurrences_words))
+```
+
+```{r}
+word_pairs <- combn(colnames(cor_original),2)
+```
+
+```{r fig.height = 5, fig.width = 5}
+df1 <- data.frame("original" = cor_original[lower.tri(cor_original)],
+                 "corshrink" = corshrink_mat[lower.tri(corshrink_mat)],
+                 "nsamp" = num_occurrence_matrix[lower.tri(num_occurrence_matrix)])
+df1$nsamp[which(is.na(df1$nsamp))] = max(df1$nsamp, na.rm = TRUE)
+
+colfunc <- colorRampPalette(c("lightcyan", "darkcyan"))
+plot(df1$original, df1$corshrink, bg = 2, col = colfunc(12)[df1$nsamp], pch = 19, cex = 1, xlab = "cosine similarity", ylab = "corshrink similarity", ylim = c(-0.5,1))
+abline(0,1)
+
+ids <- which(df1$original > 0.6)
+ids2 <- order(df1$original - df1$corshrink, decreasing = TRUE)[1:20]
+terms <- paste0(word_pairs[1,ids], ":", word_pairs[2,ids])
+terms2 <- paste0(word_pairs[1,ids2], ":", word_pairs[2,ids2])
+text(df1$original[ids], df1$corshrink[ids], terms,cex = 0.5)
+```
+
+
+```{r}
+tmp <- sort(corshrink_mat["martin_luther_king",], decreasing = TRUE)[1:30]
+names2 <- setdiff(names(tmp), c("martin_luther_kings", "dr_kings", "luther"))
+aa <- tmp[match(names2, names(tmp))]
+aa[1:20]
+```
+```{r}
+tmp <- sort(cor_original["martin_luther_king",], decreasing = TRUE)[1:30]
+names2 <- setdiff(names(tmp), c("martin_luther_kings", "dr_kings", "luther"))
+aa <- tmp[match(names2, names(tmp))]
+aa[1:21]
+```
+
+
+## Vietnam
+
+```{r}
+mat <- get(load("../output/word2vec_Ebony_newspapers/vietnam_corshrink_newspapers.rda"))
+cor_original <- mat$original
+corshrink_mat <- mat$corshrink
+```
+
+
+```{r}
+word_frequencies_mat <- get(load("../output/word2vec_Ebony/word_frequencies.rda"))
+word_presence_absence <- word_frequencies_mat
+word_presence_absence[word_presence_absence > 0] = 1
+```
+
+```{r}
+matched_word_frequencies <- word_presence_absence[, match(rownames(corshrink_mat), colnames(word_presence_absence))]
+```
+
+```{r}
+num_occurrences_words <- colSums(matched_word_frequencies)
+```
+
+```{r}
+num_occurrence_matrix <- sapply(num_occurrences_words, function(l) pmin(l, num_occurrences_words))
+```
+
+```{r}
+word_pairs <- combn(colnames(cor_original),2)
+```
+
+```{r fig.height = 5, fig.width = 5}
+df1 <- data.frame("original" = cor_original[lower.tri(cor_original)],
+                 "corshrink" = corshrink_mat[lower.tri(corshrink_mat)],
+                 "nsamp" = num_occurrence_matrix[lower.tri(num_occurrence_matrix)])
+df1$nsamp[which(is.na(df1$nsamp))] = max(df1$nsamp, na.rm = TRUE)
+
+colfunc <- colorRampPalette(c("lightcyan", "darkcyan"))
+plot(df1$original, df1$corshrink, bg = 2, col = colfunc(12)[df1$nsamp], pch = 19, cex = 1, xlab = "cosine similarity", ylab = "corshrink similarity", ylim = c(-0.5,1))
+abline(0,1)
+
+ids <- which(df1$original > 0.6)
+ids2 <- order(df1$original - df1$corshrink, decreasing = TRUE)[1:20]
+terms <- paste0(word_pairs[1,ids], ":", word_pairs[2,ids])
+terms2 <- paste0(word_pairs[1,ids2], ":", word_pairs[2,ids2])
+text(df1$original[ids], df1$corshrink[ids], terms,cex = 0.5)
+```
+
+
+```{r}
+tmp <- sort(corshrink_mat["vietnam",], decreasing = TRUE)[1:30]
+names2 <- setdiff(names(tmp), c("ietnam"))
+aa <- tmp[match(names2, names(tmp))]
+aa[1:22]
+```
+
+
+```{r}
+tmp <- sort(cor_original["vietnam",], decreasing = TRUE)[1:30]
+names2 <- setdiff(names(tmp), c("ietnam"))
+aa <- tmp[match(names2, names(tmp))]
+aa[1:22]
+```
+
+## Civil rights
+
+```{r}
+mat <- get(load("../output/word2vec_Ebony_newspapers/civil_rights_corshrink_newspapers.rda"))
+cor_original <- mat$original
+corshrink_mat <- mat$corshrink
+```
+
+
+```{r}
+word_frequencies_mat <- get(load("../output/word2vec_Ebony/word_frequencies.rda"))
+word_presence_absence <- word_frequencies_mat
+word_presence_absence[word_presence_absence > 0] = 1
+```
+
+```{r}
+matched_word_frequencies <- word_presence_absence[, match(rownames(corshrink_mat), colnames(word_presence_absence))]
+```
+
+```{r}
+num_occurrences_words <- colSums(matched_word_frequencies)
+```
+
+```{r}
+num_occurrence_matrix <- sapply(num_occurrences_words, function(l) pmin(l, num_occurrences_words))
+```
+
+```{r}
+word_pairs <- combn(colnames(cor_original),2)
+```
+
+```{r fig.height = 5, fig.width = 5}
+df1 <- data.frame("original" = cor_original[lower.tri(cor_original)],
+                 "corshrink" = corshrink_mat[lower.tri(corshrink_mat)],
+                 "nsamp" = num_occurrence_matrix[lower.tri(num_occurrence_matrix)])
+df1$nsamp[which(is.na(df1$nsamp))] = max(df1$nsamp, na.rm = TRUE)
+
+colfunc <- colorRampPalette(c("lightcyan", "darkcyan"))
+plot(df1$original, df1$corshrink, bg = 2, col = colfunc(12)[df1$nsamp], pch = 19, cex = 1, xlab = "cosine similarity", ylab = "corshrink similarity", ylim = c(-0.5,1))
+abline(0,1)
+
+ids <- which(df1$original > 0.6)
+ids2 <- order(df1$original - df1$corshrink, decreasing = TRUE)[1:20]
+terms <- paste0(word_pairs[1,ids], ":", word_pairs[2,ids])
+terms2 <- paste0(word_pairs[1,ids2], ":", word_pairs[2,ids2])
+text(df1$original[ids], df1$corshrink[ids], terms,cex = 0.5)
+```
+
+
+```{r}
+tmp <- sort(corshrink_mat["civil_rights",], decreasing = TRUE)[1:30]
+names2 <- setdiff(names(tmp), c("civil", "rights"))
+aa <- tmp[match(names2, names(tmp))]
+aa[1:20]
+```
+
+
+```{r}
+tmp <- sort(cor_original["civil_rights",], decreasing = TRUE)[1:30]
+names2 <- setdiff(names(tmp), c("civil", "rights"))
+aa <- tmp[match(names2, names(tmp))]
+aa[1:22]
+```
+
+## SessionInfo
+
+```{r}
+sessionInfo()
+```
+

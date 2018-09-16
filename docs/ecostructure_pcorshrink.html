@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Kushal K Dey" />
+
+
+<title>pCorShrink on ecostructure data</title>
+
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+<link rel="stylesheet" href="cosmo.css" type="text/css" />
+
+</head>
+
+<body>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:100,300,400,600" rel="stylesheet" type="text/css">
+    <link href="../docs/cosmo.css" rel="stylesheet">
+    <link href="../docs/cosmo.min.css" rel="stylesheet">
+</head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="../docs/bootstrap/js/bootstrap.min.js"></script>
+
+<body>
+
+<div class = "nav" align = "middle">
+<div class= "p1"></div>
+<p>
+  <a class="btn btn-large btn btn-primary" type="button" href = "index.html">CorShrink</a>
+  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow.html">DEMO</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow_project.html">WORKFLOW</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink">SOFTWARE</a>
+ </p>
+</div>
+<!-- <div class="nav">
+  <a href="index.html">Home page</a> &nbsp &nbsp
+  <a href="musings.html">Musings</a> &nbsp &nbsp
+  <a href="town.html">My town</a> &nbsp &nbsp
+  <a href="links.html">Links</a>
+</div> -->
+
+<!-- Main content -->
+</body>
+</html>
+
+
+<h1 class="title toc-ignore">pCorShrink on ecostructure data</h1>
+<h4 class="author"><em>Kushal K Dey</em></h4>
+<h4 class="date"><em>6/30/2018</em></h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#packages">Packages</a></li>
+<li><a href="#data">Data</a><ul>
+<li><a href="#pcorshrink-glmnet">pCorShrink + GLMNET</a></li>
+</ul></li>
+<li><a href="#positively-associated-birds">Positively associated Birds</a></li>
+<li><a href="#negatively-associated-birds">Negatively associated Birds</a></li>
+</ul>
+</div>
+
+<div id="packages" class="section level2">
+<h2>Packages</h2>
+<pre class="r"><code>library(CorShrink)
+library(ecostructure)
+library(corpcor)
+library(corrplot)
+library(network)
+library(statnet)
+library(scales)
+library(Biobase)
+library(limma)</code></pre>
+</div>
+<div id="data" class="section level2">
+<h2>Data</h2>
+<pre class="r"><code>data(&quot;himalayan_birds&quot;)
+birds &lt;- exprs(himalayan_birds)
+log_cpm_birds &lt;- t(limma::voom(birds)$E)
+ymat = scale(log_cpm_birds, scale = TRUE, center = TRUE)</code></pre>
+<div id="pcorshrink-glmnet" class="section level3">
+<h3>pCorShrink + GLMNET</h3>
+<pre class="r"><code>pcor2 &lt;- pCorShrinkData(ymat, reg_type = &quot;glmnet&quot;, glmnet_alpha = 0.8)
+col2 &lt;- c(&quot;blue&quot;, &quot;white&quot;, &quot;red&quot;)
+corrplot(pcor2, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = &quot;td&quot;, 
+         tl.col = &quot;black&quot;, tl.cex = 0.8, rect.col = &quot;white&quot;, 
+         na.label.col = &quot;white&quot;, method = &quot;color&quot;, type = &quot;upper&quot;)</code></pre>
+<p><img src="ecostructure_pcorshrink_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<pre class="r"><code>colnames(pcor2) &lt;- c(rownames(birds))
+rownames(pcor2) &lt;- colnames(pcor2)
+
+tmp &lt;- pcor2[lower.tri((pcor2))]
+idx1 &lt;- order(tmp, decreasing = TRUE)[1:25]
+idx2 &lt;- order(tmp, decreasing = FALSE)[1:25]
+
+tmp[idx1]</code></pre>
+<pre><code>##  [1] 0.9888860 0.9886311 0.7658025 0.7599949 0.7118505 0.7005307 0.6928543
+##  [8] 0.6826790 0.6572590 0.6156191 0.6129314 0.6073927 0.6000300 0.5954638
+## [15] 0.5888494 0.5858971 0.5854348 0.5672162 0.5496850 0.5462277 0.5426408
+## [22] 0.5354098 0.5279475 0.5258894 0.5122830</code></pre>
+<pre class="r"><code>tmp[idx2]</code></pre>
+<pre><code>##  [1] -0.9603030 -0.9382375 -0.8984661 -0.8693361 -0.8640522 -0.8608445
+##  [7] -0.8431629 -0.8328228 -0.8151713 -0.8010064 -0.7987693 -0.7929924
+## [13] -0.7917160 -0.7894634 -0.7883849 -0.7861321 -0.7831861 -0.7759119
+## [19] -0.7679360 -0.7656134 -0.7620676 -0.7608243 -0.7561347 -0.7529231
+## [25] -0.7513484</code></pre>
+<pre class="r"><code>bird_pairs &lt;- combn(colnames(pcor2),2)</code></pre>
+</div>
+</div>
+<div id="positively-associated-birds" class="section level2">
+<h2>Positively associated Birds</h2>
+<pre class="r"><code>t(bird_pairs[,idx1])</code></pre>
+<pre><code>##       [,1]                        [,2]                       
+##  [1,] &quot;Paradoxornis_ruficeps&quot;     &quot;Paradoxornis_gularis&quot;     
+##  [2,] &quot;Monticola_cinclorhynchus&quot;  &quot;Saxicola_ferreus&quot;         
+##  [3,] &quot;Leiothrix_argentauris&quot;     &quot;Paradoxornis_ruficeps&quot;    
+##  [4,] &quot;Hypopicus_hyperythrus&quot;     &quot;Aceros_undulatus&quot;         
+##  [5,] &quot;Zoothera_mollissima&quot;       &quot;Cochoa_purpurea&quot;          
+##  [6,] &quot;Harpactes_erythrocephalus&quot; &quot;Harpactes_wardi&quot;          
+##  [7,] &quot;Paradoxornis_nipalensis&quot;   &quot;Conostoma_oemodium&quot;       
+##  [8,] &quot;Emberiza_fucata&quot;           &quot;Pyrrhula_aurantiaca&quot;      
+##  [9,] &quot;Coracina_macei&quot;            &quot;Dicrurus_remifer&quot;         
+## [10,] &quot;Paradoxornis_gularis&quot;      &quot;Coracina_macei&quot;           
+## [11,] &quot;Psarisomus_dalhousiae&quot;     &quot;Pitta_brachyura&quot;          
+## [12,] &quot;Picus_xanthopygaeus&quot;       &quot;Cettia_pallidipes&quot;        
+## [13,] &quot;Pteruthius_flaviscapis&quot;    &quot;Pteruthius_melanotis&quot;     
+## [14,] &quot;Mycerobas_affinis&quot;         &quot;Mycerobas_carnipes&quot;       
+## [15,] &quot;Merops_orientalis&quot;         &quot;Megalaima_haemacephala&quot;   
+## [16,] &quot;Pteruthius_xanthochlorus&quot;  &quot;Oriolus_kundoo&quot;           
+## [17,] &quot;Oriolus_xanthornus&quot;        &quot;Oriolus_traillii&quot;         
+## [18,] &quot;Carpodacus_rubescens&quot;      &quot;Pyrrhoplectes_epauletta&quot;  
+## [19,] &quot;Parus_ater&quot;                &quot;Parus_dichrous&quot;           
+## [20,] &quot;Phaenicophaeus_tristis&quot;    &quot;Ceyx_erithaca&quot;            
+## [21,] &quot;Pericrocotus_roseus&quot;       &quot;Abroscopus_albogularis&quot;   
+## [22,] &quot;Luscinia_pectoralis&quot;       &quot;Hodgsonius_phaenicuroides&quot;
+## [23,] &quot;Cuculus_saturatus&quot;         &quot;Cuculus_canorus&quot;          
+## [24,] &quot;Psittacula_cyanocephala&quot;   &quot;Abroscopus_albogularis&quot;   
+## [25,] &quot;Seicercus_burkii&quot;          &quot;Seicercus_poliogenys&quot;</code></pre>
+</div>
+<div id="negatively-associated-birds" class="section level2">
+<h2>Negatively associated Birds</h2>
+<pre class="r"><code>t(bird_pairs[,idx2])</code></pre>
+<pre><code>##       [,1]                      [,2]                     
+##  [1,] &quot;Sturnia_malabarica&quot;      &quot;Psittacula_cyanocephala&quot;
+##  [2,] &quot;Spelaeornis_formosus&quot;    &quot;Abroscopus_albogularis&quot; 
+##  [3,] &quot;Leiothrix_lutea&quot;         &quot;Cettia_pallidipes&quot;      
+##  [4,] &quot;Napothera_epilepidota&quot;   &quot;Yuhina_bakeri&quot;          
+##  [5,] &quot;Heterophasia_annectans&quot;  &quot;Pericrocotus_solaris&quot;   
+##  [6,] &quot;Muscicapella_hodgsoni&quot;   &quot;Spelaeornis_caudatus&quot;   
+##  [7,] &quot;Paradoxornis_fulvifrons&quot; &quot;Pyrrhoplectes_epauletta&quot;
+##  [8,] &quot;Aceros_nipalensis&quot;       &quot;Napothera_epilepidota&quot;  
+##  [9,] &quot;Brachypteryx_leucophrys&quot; &quot;Heterophasia_annectans&quot; 
+## [10,] &quot;Pericrocotus_roseus&quot;     &quot;Psittacula_cyanocephala&quot;
+## [11,] &quot;Brachypteryx_hyperythra&quot; &quot;Actinodura_waldeni&quot;     
+## [12,] &quot;Actinodura_nipalensis&quot;   &quot;Picus_xanthopygaeus&quot;    
+## [13,] &quot;Phyllergates_cucullatus&quot; &quot;Heterophasia_annectans&quot; 
+## [14,] &quot;Ocyceros_birostris&quot;      &quot;Acridotheres_tristis&quot;   
+## [15,] &quot;Niltava_grandis&quot;         &quot;Pteruthius_flaviscapis&quot; 
+## [16,] &quot;Prinia_socialis&quot;         &quot;Spelaeornis_caudatus&quot;   
+## [17,] &quot;Heterophasia_annectans&quot;  &quot;Heterophasia_picaoides&quot; 
+## [18,] &quot;Spelaeornis_caudatus&quot;    &quot;Dicaeum_ignipectus&quot;     
+## [19,] &quot;Leiothrix_argentauris&quot;   &quot;Paradoxornis_gularis&quot;   
+## [20,] &quot;Fulvetta_vinipectus&quot;     &quot;Carpodacus_rubescens&quot;   
+## [21,] &quot;Pycnonotus_cafer&quot;        &quot;Cinnyris_asiaticus&quot;     
+## [22,] &quot;Sitta_formosa&quot;           &quot;Heterophasia_annectans&quot; 
+## [23,] &quot;Phoenicurus_frontalis&quot;   &quot;Spelaeornis_caudatus&quot;   
+## [24,] &quot;Cyornis_unicolor&quot;        &quot;Phylloscopus_cantator&quot;  
+## [25,] &quot;Liocichla_phoenicea&quot;     &quot;Yuhina_bakeri&quot;</code></pre>
+</div>
+
+<hr>
+<p>
+    This <a href="http://rmarkdown.rstudio.com">R Markdown</a> site was created with <a href="https://github.com/jdblischak/workflowr">workflowr</a>
+</p>
+<hr>
+
+<!-- To enable disqus, uncomment the section below and provide your disqus_shortname -->
+
+<!-- disqus
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'rmarkdown'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+-->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

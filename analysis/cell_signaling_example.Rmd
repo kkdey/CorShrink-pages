@@ -1,0 +1,87 @@
+---
+title: 'Cell signaling example : pcorshrink and ISEE'
+author: "Kushal K Dey"
+date: "June 29, 2018"
+output: html_document
+---
+
+In this script, we look at the performance of pCorShrink and ISEE in terms of causal graph modeling on the cell signaling flow cytometry data from 11 proteins across nearly 7500 samples from Sachs et al 2005 [paper](https://www.ncbi.nlm.nih.gov/pubmed/15845847).
+
+```{r opts, echo=FALSE}
+knitr::opts_chunk$set(fig.path = "cell_signaling_example/")
+```
+
+
+```{r warning=FALSE, message = FALSE}
+library(glasso)
+library(corpcor)
+library(CorShrink)
+library(network)
+source("isee_all.R")
+library(scales)
+library(statnet)
+library(readxl)
+```
+
+
+```{r}
+Xmat1 = read_excel("Sachs2005/1. cd3cd28.xls")
+Xmat2 = read_excel("Sachs2005/2. cd3cd28icam2.xls")
+Xmat3 = read_excel("Sachs2005/3. cd3cd28+aktinhib.xls")
+Xmat4 = read_excel("Sachs2005/4. cd3cd28+g0076.xls")
+Xmat5 = read_excel("Sachs2005/5. cd3cd28+psitect.xls")
+Xmat6 = read_excel("Sachs2005/6. cd3cd28+u0126.xls")
+Xmat7 = read_excel("Sachs2005/7. cd3cd28+ly.xls")
+Xmat_temp = rbind(Xmat1, Xmat2, Xmat3, Xmat4, Xmat5, Xmat6, Xmat7)
+colnames(Xmat_temp) = c("Raf", "Mek", "Plcg", "PIP2", "PIP3", "Erk", "Akt",
+                   "PKA", "PKC", "P38", "Jnk")
+Xmat8 = read_excel("Sachs2005/8. pma.xls")
+colnames(Xmat8) = c("Raf", "Mek", "Plcg", "PIP2", "PIP3", "Erk", "Akt",
+                   "PKA", "PKC", "P38", "Jnk")
+Xmat9 = read_excel("Sachs2005/9. b2camp.xls")
+colnames(Xmat9) = c("Raf", "Mek", "Plcg", "PIP2", "PIP3", "Erk", "Akt",
+                   "PKA", "PKC", "P38", "Jnk")
+
+Xmat = rbind(Xmat_temp, Xmat8, Xmat9)
+Xmat = as.matrix(Xmat)
+
+colnames(Xmat) = c("Raf", "Mek", "Plcg", "PIP2", "PIP3", "Erk", "Akt",
+                   "PKA", "PKC", "P38", "Jnk")
+Xmat = cbind(Xmat, rnorm(nrow(Xmat), 0, 1))
+Ymat = scale(Xmat, center=TRUE, scale=TRUE)
+```
+
+## ISEE
+
+```{r}
+pcor4 <- pCorShrinkData(Ymat, reg_type = "lm",
+                        maxiter = 1000,
+                        ash.control = list(mixcompdist = "halfuniform"))
+pcor4 <- pcor4[1:11, 1:11]
+A <- ifelse(pcor4 > 0.02 & row(pcor4)!=col(pcor4),1,0)
+
+g <- network(A)
+plot(g,label=c("Raf", "Mek", "Plcg", "PIP2", "PIP3", "Erk", "Akt",
+                   "PKA", "PKC", "P38", "Jnk"),
+     main="Estimated network by pCorShrink+LM")
+
+```
+
+
+```{r}
+added_num = 200
+g = network(10*pcor4, matrix.type = "adjacency", directed = FALSE,
+               names.eval="weight", ignore.eval=FALSE)
+#get.edge.value(g, "weight")
+#plot(g,label=1:p,main="Estimated network by pCorShrink+LM")
+col2 <- c("blue", "white", "red")
+palette =  c(rep("blue", added_num), 
+             colorRampPalette(col2)(200), rep("red", added_num))
+gplot(g,gmode="graph",label = c("Raf", "Mek", "Plcg", "PIP2", "PIP3", "Erk", "Akt", "PKA", "PKC", "P38"), edge.lwd=g%e%'weight', 
+      edge.col = palette[rescale(g%e%'weight', 
+                        to = c(1, 600), from = c(-10,10))],
+      vertex.col="black")
+```
+
+
+

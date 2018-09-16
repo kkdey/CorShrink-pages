@@ -1,0 +1,67 @@
+---
+title: "pCorShrink on ecostructure data"
+author: "Kushal K Dey"
+date: "6/30/2018"
+output: html_document
+---
+
+## Packages 
+
+```{r warning=FALSE, message=FALSE}
+library(CorShrink)
+library(ecostructure)
+library(corpcor)
+library(corrplot)
+library(network)
+library(statnet)
+library(scales)
+library(Biobase)
+library(limma)
+```
+
+## Data
+
+```{r}
+data("himalayan_birds")
+birds <- exprs(himalayan_birds)
+log_cpm_birds <- t(limma::voom(birds)$E)
+ymat = scale(log_cpm_birds, scale = TRUE, center = TRUE)
+```
+
+### pCorShrink +  GLMNET
+
+```{r}
+pcor2 <- pCorShrinkData(ymat, reg_type = "glmnet", glmnet_alpha = 0.8)
+col2 <- c("blue", "white", "red")
+corrplot(pcor2, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.8, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+```
+
+```{r}
+colnames(pcor2) <- c(rownames(birds))
+rownames(pcor2) <- colnames(pcor2)
+
+tmp <- pcor2[lower.tri((pcor2))]
+idx1 <- order(tmp, decreasing = TRUE)[1:25]
+idx2 <- order(tmp, decreasing = FALSE)[1:25]
+
+tmp[idx1]
+tmp[idx2]
+```
+
+```{r}
+bird_pairs <- combn(colnames(pcor2),2)
+```
+
+## Positively associated Birds
+
+```{r}
+t(bird_pairs[,idx1])
+```
+
+## Negatively associated Birds
+
+```{r}
+t(bird_pairs[,idx2])
+```

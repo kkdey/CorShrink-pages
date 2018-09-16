@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+
+<title></title>
+
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+<link rel="stylesheet" href="cosmo.css" type="text/css" />
+
+</head>
+
+<body>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:100,300,400,600" rel="stylesheet" type="text/css">
+    <link href="../docs/cosmo.css" rel="stylesheet">
+    <link href="../docs/cosmo.min.css" rel="stylesheet">
+</head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="../docs/bootstrap/js/bootstrap.min.js"></script>
+
+<body>
+
+<div class = "nav" align = "middle">
+<div class= "p1"></div>
+<p>
+  <a class="btn btn-large btn btn-primary" type="button" href = "index.html">CorShrink</a>
+  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow.html">DEMO</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow_project.html">WORKFLOW</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink">SOFTWARE</a>
+ </p>
+</div>
+<!-- <div class="nav">
+  <a href="index.html">Home page</a> &nbsp &nbsp
+  <a href="musings.html">Musings</a> &nbsp &nbsp
+  <a href="town.html">My town</a> &nbsp &nbsp
+  <a href="links.html">Links</a>
+</div> -->
+
+<!-- Main content -->
+</body>
+</html>
+
+
+
+
+
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>Estimation of correlation matrix by shrinkage based approaches is an ubiquitous problem in statistics. Popular shrinkage based methods are not flexible in handling missing observations.</p>
+<p>Here, we propose an Empirical Bayes shrinkage approach called <strong>CorShrink</strong>, which adaptively learns how much to shrink the correlations by combining information across all pairs of variables, while also adjusting for the the varying amounts of missing data for each pair.</p>
+<ul>
+<li><p><strong>CorShrink</strong> is a very competing method to other correlation shrinkage approaches - PDSCE, corpcor, GLASSO etc under structured or sparse population covariance models when the number of samples <span class="math inline">\(N\)</span> is less than the number of features <span class="math inline">\(P\)</span>.</p></li>
+<li><p><strong>CorShrink</strong> is flexible to apply on correlation-like quantities such as cosine similarities between words from word2vec models, thereby generating more robust similairty scores.</p></li>
+<li><p><strong>CorShrink</strong> can also be extended to generate adaptively shrunk partial correlations and can be used for conditional graph estimation as an alternative to GLASSO, CLIME etc.</p></li>
+</ul>
+</div>
+<div id="installation" class="section level1">
+<h1>Installation</h1>
+<p><strong>CorShrink</strong> is a companion package to <strong>ashr</strong> R package <span class="citation">[@stephens2016false]</span>. Before installing <strong>CorShrink</strong>, please make sure you have the latest version of <strong>ashr</strong>.</p>
+<pre class="r"><code>install.packages(&quot;ashr&quot;)</code></pre>
+<p>The other dependencies of this package include <strong>SQUAREM</strong>, <strong>reshape2</strong> and <strong>Matrix</strong>. Next we install <strong>CorShrink</strong>.</p>
+<pre class="r"><code>install.packages(&quot;CorShrink&quot;)</code></pre>
+<p>The development version can be installed from Github as well.</p>
+<pre class="r"><code>library(devtools)
+install_github(&quot;kkdey/CorShrink&quot;)</code></pre>
+<p>Then load the package with:</p>
+<pre class="r"><code>library(CorShrink)</code></pre>
+</div>
+<div id="illustration" class="section level1">
+<h1>Illustration</h1>
+<p>We load an example data matrix - the person (544) by tissue samples (53) gene expression data for the gene <em>ENSG00000166819</em> collected from the <a href="https://www.gtexportal.org/home/">Genotype Tissue Expression (GTEx) Project</a> .</p>
+<pre class="r"><code>data(&quot;sample_by_feature_data&quot;)</code></pre>
+<p>Just by checking the first few rows and columns, we see that the data contains many missing values. The data is</p>
+<pre class="r"><code>sample_by_feature_data[1:5,1:5]</code></pre>
+<pre><code>##            Adipose - Subcutaneous Adipose - Visceral (Omentum)
+## GTEX-111CU              10.472332                     10.84006
+## GTEX-111FC               7.335392                           NA
+## GTEX-111VG               9.118889                           NA
+## GTEX-111YS              10.806459                     11.26113
+## GTEX-1122O              11.040446                     11.71497
+##            Adrenal Gland Artery - Aorta Artery - Coronary
+## GTEX-111CU      2.721234             NA                NA
+## GTEX-111FC            NA             NA                NA
+## GTEX-111VG            NA             NA                NA
+## GTEX-111YS      3.454823       1.162059                NA
+## GTEX-1122O      1.522667       1.674467          4.188002</code></pre>
+<div id="corshrinkdata" class="section level2">
+<h2><em>CorShrinkData</em></h2>
+<p>We estimate the adaptively shrunk correlation matrix for this data using <strong>CorShrink</strong>.</p>
+<pre class="r"><code>out &lt;- CorShrinkData(sample_by_feature_data, sd_boot = FALSE, image = &quot;both&quot;,
+                     image.control = list(tl.cex = 0.8))</code></pre>
+<p><img src="workflow_files/figure-html/corshrink_data-1.png" width="900" style="display: block; margin: auto auto auto 0;" /></p>
+<p>The function outputs a list with two elements which are two versions of CorShrink estimated matrices - <code>cor</code> and <code>cor_before_PD</code>.<code>cor</code> is the nearest positive definite approximation (<span class="math inline">\(R^{{\star}{\star}}\)</span>) to <code>cor_before_PD</code> version (<span class="math inline">\(R^{{\star}}\)</span>) as described in the methods above. When <code>image = &quot;both&quot;</code>, the function plots the images for both these versions.</p>
+<p>To see whether the method works well, check if the these two versions are close to each other.</p>
+<pre class="r"><code>out$cor_before_PD[1:5,1:5]</code></pre>
+<pre><code>##                              Adipose - Subcutaneous
+## Adipose - Subcutaneous                   1.00000000
+## Adipose - Visceral (Omentum)             0.24093320
+## Adrenal Gland                           -0.04403115
+## Artery - Aorta                           0.01330864
+## Artery - Coronary                        0.21663196
+##                              Adipose - Visceral (Omentum) Adrenal Gland
+## Adipose - Subcutaneous                        0.240933205  -0.044031146
+## Adipose - Visceral (Omentum)                  1.000000000   0.002121612
+## Adrenal Gland                                 0.002121612   1.000000000
+## Artery - Aorta                                0.004465918  -0.001097126
+## Artery - Coronary                             0.012401533   0.038526770
+##                              Artery - Aorta Artery - Coronary
+## Adipose - Subcutaneous          0.013308642        0.21663196
+## Adipose - Visceral (Omentum)    0.004465918        0.01240153
+## Adrenal Gland                  -0.001097126        0.03852677
+## Artery - Aorta                  1.000000000        0.03898770
+## Artery - Coronary               0.038987702        1.00000000</code></pre>
+<pre class="r"><code>out$cor[1:5, 1:5]</code></pre>
+<pre><code>##                              Adipose - Subcutaneous
+## Adipose - Subcutaneous                   1.00000000
+## Adipose - Visceral (Omentum)             0.24033223
+## Adrenal Gland                           -0.04214076
+## Artery - Aorta                           0.01365631
+## Artery - Coronary                        0.21484578
+##                              Adipose - Visceral (Omentum) Adrenal Gland
+## Adipose - Subcutaneous                        0.239003917 -0.0418844246
+## Adipose - Visceral (Omentum)                  1.000000000  0.0017177172
+## Adrenal Gland                                 0.001718678  1.0000000000
+## Artery - Aorta                                0.003293150 -0.0008103749
+## Artery - Coronary                             0.013509246  0.0377365197
+##                              Artery - Aorta Artery - Coronary
+## Adipose - Subcutaneous         0.0135859012        0.21371816
+## Adipose - Visceral (Omentum)   0.0032943783        0.01351303
+## Adrenal Gland                 -0.0008111305        0.03776819
+## Artery - Aorta                 1.0000000000        0.03858038
+## Artery - Coronary              0.0385839706        1.00000000</code></pre>
+</div>
+<div id="corshrinkmatrix" class="section level2">
+<h2><em>CorShrinkMatrix</em></h2>
+<p><strong>CorShrink</strong> takes as input not just the samples by features data matrix but also a matrix of pairwise correlations with a matrix of number of samples for each pair contributing to the correlation.</p>
+<pre class="r"><code>data(&quot;pairwise_corr_matrix&quot;)
+data(&quot;common_samples&quot;)
+out &lt;- CorShrinkMatrix(pairwise_corr_matrix, common_samples, image = &quot;both&quot;,
+                       image.control = list(tl.cex = 0.8))</code></pre>
+<p><img src="workflow_files/figure-html/corshrinkmat-1.png" width="900" style="display: block; margin: auto auto auto 0;" /></p>
+</div>
+<div id="corshrinkvector" class="section level2">
+<h2><em>CorShrinkVector</em></h2>
+<p><strong>CorShrink</strong> can be applied to vectors of correlations as well.</p>
+<pre class="r"><code>cor_vec &lt;- c(-0.56, -0.4, 0.02, 0.2, 0.9, 0.8, 0.3, 0.1, 0.4)
+nsamp_vec &lt;- c(10, 20, 30, 4, 50, 60, 20, 10, 3)
+out &lt;- CorShrinkVector(corvec = cor_vec, nsamp_vec = nsamp_vec)
+out</code></pre>
+<pre><code>## [1] -0.1008065570 -0.0593108888  0.0006072387  0.0127953383  0.8944339076
+## [6]  0.7935595323  0.0236537504  0.0051443096  0.0250218532</code></pre>
+<p>Note that the correlations computed from adequate amount of data as for the 5th and 6th entries above, the amount of shrinkage is minimal, while it is substantial for the 4th and 9th entries which correspond to small number of samples.</p>
+</div>
+<div id="corshrinkdata---resampling" class="section level2">
+<h2><em>CorShrinkData</em> - resampling</h2>
+<p>We have so far looked at <em>CorShrinkData</em>, <em>CorShrinkMatrix</em> and <em>CorShrinkVector</em>, three functions that provide adaptive shrinkage of correlations at the level of the data matrix, matrix of correlations and vector of correlations respectively. In the above examples, we have used the asymptotic version of our algorithm (see Methods). Next we show example usage of a resampling based version of <em>CorShrink</em>.</p>
+<pre class="r"><code>out &lt;- CorShrinkData(sample_by_feature_data, sd_boot = TRUE, image = &quot;both&quot;,
+                     image.control = list(tl.cex = 0.8))</code></pre>
+<pre><code>## Finished Bootstrap : 1 
+## Finished Bootstrap : 2 
+## Finished Bootstrap : 3 
+## Finished Bootstrap : 4 
+## Finished Bootstrap : 5 
+## Finished Bootstrap : 6 
+## Finished Bootstrap : 7 
+## Finished Bootstrap : 8 
+## Finished Bootstrap : 9 
+## Finished Bootstrap : 10 
+## Finished Bootstrap : 11 
+## Finished Bootstrap : 12 
+## Finished Bootstrap : 13 
+## Finished Bootstrap : 14 
+## Finished Bootstrap : 15 
+## Finished Bootstrap : 16 
+## Finished Bootstrap : 17 
+## Finished Bootstrap : 18 
+## Finished Bootstrap : 19 
+## Finished Bootstrap : 20 
+## Finished Bootstrap : 21 
+## Finished Bootstrap : 22 
+## Finished Bootstrap : 23 
+## Finished Bootstrap : 24 
+## Finished Bootstrap : 25 
+## Finished Bootstrap : 26 
+## Finished Bootstrap : 27 
+## Finished Bootstrap : 28 
+## Finished Bootstrap : 29 
+## Finished Bootstrap : 30 
+## Finished Bootstrap : 31 
+## Finished Bootstrap : 32 
+## Finished Bootstrap : 33 
+## Finished Bootstrap : 34 
+## Finished Bootstrap : 35 
+## Finished Bootstrap : 36 
+## Finished Bootstrap : 37 
+## Finished Bootstrap : 38 
+## Finished Bootstrap : 39 
+## Finished Bootstrap : 40 
+## Finished Bootstrap : 41 
+## Finished Bootstrap : 42 
+## Finished Bootstrap : 43 
+## Finished Bootstrap : 44 
+## Finished Bootstrap : 45 
+## Finished Bootstrap : 46 
+## Finished Bootstrap : 47 
+## Finished Bootstrap : 48 
+## Finished Bootstrap : 49 
+## Finished Bootstrap : 50</code></pre>
+<p><img src="workflow_files/figure-html/corshrink_data_boot-1.png" width="900" style="display: block; margin: auto auto auto 0;" /></p>
+<p>The algorithm works by first computing a Bootstrap estimate of the standard error of the Fisher z-scores for each pair and then using this estimate together with the correlations to shrink the latter.</p>
+</div>
+<div id="corshrinkmatrix---resampling" class="section level2">
+<h2><em>CorShrinkMatrix</em> - resampling</h2>
+<p>The breakdown can be formulated at the level of a correlation matrix as follows.</p>
+<pre class="r"><code>zscoreSDmat &lt;- bootcorSE_calc(sample_by_feature_data, verbose = FALSE)
+out &lt;- CorShrinkMatrix(pairwise_corr_matrix, zscore_sd = zscoreSDmat, image = &quot;both&quot;,
+                       image.control = list(tl.cex = 0.8))</code></pre>
+<p><img src="workflow_files/figure-html/corshrink_mat_boot-1.png" width="900" style="display: block; margin: auto auto auto 0;" /></p>
+</div>
+<div id="pcorshrink" class="section level2">
+<h2><em>pCorShrink</em></h2>
+<p>We can use the <em>pCorShrinkData</em> function to adaptively shrink partial correlations. This approach is analogous to GLASSO, CLIME and other sparse graphical model methods, but <strong>pCorShrinkData</strong> shrinks the edge weights in the graph to 0 adaptively.</p>
+<p>As per current implementation <em>pCorShrinkData</em> does not handle missing observations in the data matrix. So, we demonstrate the use of this method on a fully observed simulated data.</p>
+<div id="simulated-setting" class="section level3">
+<h3>Simulated setting</h3>
+<pre class="r"><code>library(Matrix)
+n &lt;- 500
+P &lt;- 100
+block &lt;- 10
+mat &lt;- 0.3*diag(1,block) + 0.7*rep(1,block) %*% t(rep(1, block))
+Sigma &lt;-   Matrix::bdiag(mat, mat, mat, mat, mat, mat, mat, mat, mat, mat)
+corSigma &lt;- cov2cor(Sigma)
+pcorSigma &lt;- corpcor::cor2pcor(corSigma)  ##  true partial correlation matrix</code></pre>
+</div>
+<div id="generate-data" class="section level3">
+<h3>Generate Data</h3>
+<pre class="r"><code>##################  Generate data   ################
+
+data &lt;- MASS::mvrnorm(n,rep(0,P),Sigma)</code></pre>
+</div>
+<div id="pcorshrinkdata" class="section level3">
+<h3>pCorShrinkData</h3>
+<pre class="r"><code>out1 &lt;- pCorShrinkData(data, reg_type = &quot;lm&quot;)</code></pre>
+</div>
+<div id="visualization" class="section level3">
+<h3>Visualization</h3>
+<pre class="r"><code>library(corrplot)
+col2 &lt;- c(&quot;blue&quot;, &quot;white&quot;, &quot;red&quot;)
+par(mfrow=c(1,2))
+corrplot::corrplot(pcorSigma, diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = &quot;td&quot;, tl.cex = 0.2, tl.col = &quot;black&quot;,
+         rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;, mar=c(2,2,2,2),
+         method = &quot;color&quot;, type = &quot;upper&quot;, title = &quot;original&quot;)
+corrplot::corrplot(out1, diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = &quot;td&quot;, tl.cex = 0.2, tl.col = &quot;black&quot;,
+         rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;, mar=c(2,2,2,2),
+         method = &quot;color&quot;, type = &quot;upper&quot;, title = &quot;pCorShrink&quot;)</code></pre>
+<p><img src="workflow_files/figure-html/unnamed-chunk-4-1.png" width="500" style="display: block; margin: auto auto auto 0;" /></p>
+<hr />
+</div>
+</div>
+</div>
+<div id="extras" class="section level1">
+<h1>Extras</h1>
+<p>So far, in all our examples, we assumed that the estimated correlations between any pair of variables is shrunk towards 0. But <em>CorShrink</em> allows the user to choose a non-zero shrinkage target, estimated from the data, using the <code>mode</code> option in <code>ash.control</code> input.</p>
+<p>One can choose a fixed non-zero target in <code>mode</code> as well.</p>
+<pre class="r"><code>par(mfrow=c(1,2))
+out1 &lt;- CorShrinkData(sample_by_feature_data, sd_boot = FALSE, image = &quot;corshrink&quot;,             image.control = list(title = &quot;CorShrink (target = 0)&quot;, tl.cex = 0.8))
+out2 &lt;- CorShrinkData(sample_by_feature_data, sd_boot = FALSE, image = &quot;corshrink&quot;,                      ash.control = list(mode = &quot;estimate&quot;),
+    image.control = list(title = &quot;CorShrink (target = estimated)&quot;, tl.cex = 0.8))</code></pre>
+<p><img src="workflow_files/figure-html/extras_1-1.png" width="900" style="display: block; margin: auto auto auto 0;" /></p>
+<p>The <code>image = &quot;output&quot;</code> option just outputs the image for the shrunk matrix without plotting it.</p>
+<p>In general, <em>CorShrink</em> assumes a normal prior for the population Fisher z-scores. But under specific settings, a non-symmetric distribution , such as uniform or half-uniform could be a better fit. This can be achieved using the <code>mixcompdist</code> in <code>ash.control</code>.</p>
+<pre class="r"><code>par(mfrow=c(2,2))
+out1 &lt;- CorShrinkData(sample_by_feature_data,sd_boot = FALSE, image =&quot;corshrink&quot;, 
+                     ash.control = list(mixcompdist = &quot;normal&quot;),
+                     image.control = list(tl.cex = 0.6, mar=c(1,1,1,1)))
+out2 &lt;- CorShrinkData(sample_by_feature_data,sd_boot = FALSE, image =&quot;corshrink&quot;, 
+                     ash.control = list(mixcompdist = &quot;uniform&quot;),
+                     image.control = list(tl.cex = 0.6, mar=c(1,1,1,1)))
+out3 &lt;- CorShrinkData(sample_by_feature_data,sd_boot = FALSE, image =&quot;corshrink&quot;, 
+                     ash.control = list(mixcompdist = &quot;halfuniform&quot;),
+                     image.control = list(tl.cex = 0.6, mar=c(1,1,1,1)))
+out4 &lt;- CorShrinkData(sample_by_feature_data,sd_boot = FALSE, image =&quot;corshrink&quot;,  
+                     ash.control = list(mixcompdist = &quot;+uniform&quot;),
+                     image.control = list(tl.cex = 0.6, mar=c(1,1,1,1)))</code></pre>
+<p><img src="workflow_files/figure-html/extras_2-1.png" width="900" style="display: block; margin: auto auto auto 0;" /></p>
+<hr />
+</div>
+<div id="acknowledgements" class="section level1">
+<h1>Acknowledgements</h1>
+<p>We would like to thank the GTEx Consortium, John Blischak, Sarah Urbut, Chiaowen Joyce Hsiao, Peter Carbonetto and all members of the Stephens Lab.</p>
+<hr />
+</div>
+<div id="session-info" class="section level1">
+<h1>Session Info</h1>
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>## R version 3.5.0 (2018-04-23)
+## Platform: x86_64-apple-darwin15.6.0 (64-bit)
+## Running under: macOS Sierra 10.12.6
+## 
+## Matrix products: default
+## BLAS: /Library/Frameworks/R.framework/Versions/3.5/Resources/lib/libRblas.0.dylib
+## LAPACK: /Library/Frameworks/R.framework/Versions/3.5/Resources/lib/libRlapack.dylib
+## 
+## locale:
+## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+## 
+## attached base packages:
+## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+## [1] corrplot_0.84   Matrix_1.2-14   CorShrink_0.1-3
+## 
+## loaded via a namespace (and not attached):
+##  [1] Rcpp_0.12.17      knitr_1.20        magrittr_1.5     
+##  [4] MASS_7.3-49       doParallel_1.0.11 pscl_1.5.2       
+##  [7] SQUAREM_2017.10-1 lattice_0.20-35   foreach_1.4.4    
+## [10] plyr_1.8.4        ashr_2.2-7        stringr_1.3.1    
+## [13] tools_3.5.0       glmnet_2.0-16     parallel_3.5.0   
+## [16] grid_3.5.0        gtable_0.2.0      corpcor_1.6.9    
+## [19] htmltools_0.3.6   iterators_1.0.9   yaml_2.1.19      
+## [22] rprojroot_1.3-2   digest_0.6.15     gridExtra_2.3    
+## [25] reshape2_1.4.3    codetools_0.2-15  evaluate_0.10.1  
+## [28] rmarkdown_1.9     stringi_1.2.2     compiler_3.5.0   
+## [31] backports_1.1.2   truncnorm_1.0-8</code></pre>
+</div>
+<div id="support" class="section level1">
+<h1>Support</h1>
+<p>For any queries related to the <em>CorShrink</em> package, contact Kushal K. Dey here <a href="kkdey@uchicago.edu" class="uri">kkdey@uchicago.edu</a></p>
+</div>
+
+<hr>
+<p>
+    This <a href="http://rmarkdown.rstudio.com">R Markdown</a> site was created with <a href="https://github.com/jdblischak/workflowr">workflowr</a>
+</p>
+<hr>
+
+<!-- To enable disqus, uncomment the section below and provide your disqus_shortname -->
+
+<!-- disqus
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'rmarkdown'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+-->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

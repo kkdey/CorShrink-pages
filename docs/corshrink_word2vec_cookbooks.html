@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Kushal K Dey" />
+
+
+<title>corshrink word2vec cookbooks</title>
+
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+<link rel="stylesheet" href="cosmo.css" type="text/css" />
+
+</head>
+
+<body>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:100,300,400,600" rel="stylesheet" type="text/css">
+    <link href="../docs/cosmo.css" rel="stylesheet">
+    <link href="../docs/cosmo.min.css" rel="stylesheet">
+</head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="../docs/bootstrap/js/bootstrap.min.js"></script>
+
+<body>
+
+<div class = "nav" align = "middle">
+<div class= "p1"></div>
+<p>
+  <a class="btn btn-large btn btn-primary" type="button" href = "index.html">CorShrink</a>
+  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow.html">HOME</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow_project.html">WORKFLOW</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "about.html">METHODS</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink">SOFTWARE</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "license.html">LICENSE</a>
+   &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink-pages">GITHUB</a>
+ </p>
+</div>
+<!-- <div class="nav">
+  <a href="index.html">Home page</a> &nbsp &nbsp
+  <a href="musings.html">Musings</a> &nbsp &nbsp
+  <a href="town.html">My town</a> &nbsp &nbsp
+  <a href="links.html">Links</a>
+</div> -->
+
+<!-- Main content -->
+</body>
+</html>
+
+
+<h1 class="title toc-ignore">corshrink word2vec cookbooks</h1>
+<h4 class="author"><em>Kushal K Dey</em></h4>
+<h4 class="date"><em>3/31/2018</em></h4>
+
+
+
+<p>We load the cosine similarities on the original cookbooks, along with bootstrap samples.</p>
+<pre class="r"><code>dat &lt;- get(load(&quot;../output/correlation_results_original_fake.rda&quot;))</code></pre>
+<pre class="r"><code>original_cors &lt;- dat$original[lower.tri(dat$original)]
+original_z &lt;- 0.5 * log((1+original_cors)/(1-original_cors))
+
+fake_z_mat &lt;- matrix(0,100,length(original_z))
+for(m in 1:100){
+  tmp &lt;- dat$fake[[m]][lower.tri(dat$fake[[m]])]
+  fake_z_mat[m,] &lt;- 0.5 * log((1+tmp)/(1-tmp))
+}
+
+sd_fake_z_mat &lt;- apply(fake_z_mat, 2, sd)
+
+library(ashr)
+
+out &lt;- ash(original_z, sd_fake_z_mat, mixcompdist = &quot;normal&quot;)</code></pre>
+<pre><code>## Due to absence of package REBayes, switching to EM algorithm</code></pre>
+<pre class="r"><code>ash_out &lt;- (exp(2*out$result$PosteriorMean) - 1)/(exp(2*out$result$PosteriorMean) + 1)
+
+corshrink_mat &lt;- matrix(0, dim(dat$original)[1], dim(dat$original)[2])
+corshrink_mat[lower.tri(corshrink_mat)] &lt;- ash_out
+corshrink_mat_2 &lt;- corshrink_mat + t(corshrink_mat)  + diag(1, dim(dat$original)[1])
+
+rownames(corshrink_mat_2) &lt;- rownames(dat$original)
+colnames(corshrink_mat_2) &lt;- rownames(dat$original)</code></pre>
+<pre class="r"><code>library(ggplot2)
+df &lt;- data.frame(&quot;true_corr&quot; = dat$original[lower.tri(dat$original)],
+                 &quot;corshrink&quot; = corshrink_mat_2[lower.tri(corshrink_mat_2)])
+p &lt;- ggplot(df, aes(true_corr, corshrink))
+p + geom_point()</code></pre>
+<p><img src="corshrink_word2vec_cookbooks_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<pre class="r"><code>word_pairs &lt;- combn(rownames(dat$original), 2)</code></pre>
+<pre class="r"><code>idx1 &lt;- which(word_pairs[1,] == &quot;granola&quot;)
+idx2 &lt;- which(word_pairs[2,] == &quot;granola&quot;)
+idx &lt;- c(idx1, idx2)</code></pre>
+<pre class="r"><code>color_ids &lt;- rep(1, length(df$true_corr))
+color_ids[idx] &lt;- 2
+df2 &lt;- data.frame(&quot;true_corr&quot; = df$true_corr,
+                 &quot;corshrink&quot; = df$corshrink,
+                 &quot;color_idx&quot; = color_ids)
+colfunc &lt;- colorRampPalette(c(&quot;floralwhite&quot;, &quot;darkviolet&quot;))
+plot(df2$true_corr, df2$corshrink, bg = 2, col = c(&quot;black&quot;, &quot;red&quot;)[df2$color_idx], pch = 19, cex = 1, xlab = &quot;cosine similarity&quot;, ylab = &quot;corshrink similarity&quot;)
+abline(0,1)</code></pre>
+<p><img src="corshrink_word2vec_cookbooks_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<pre class="r"><code>sort(corshrink_mat_2[&quot;crisps&quot;,], decreasing = T)[1:20]</code></pre>
+<pre><code>##    crisps   oatmeal      oats   cookies    cereal   waffles    barley 
+## 1.0000000 0.4546104 0.4439319 0.3507770 0.3386130 0.3134485 0.2916054 
+##       oat    raisin      cake     cakes     wheat  pancakes    almond 
+## 0.2838988 0.2831237 0.2790836 0.2668060 0.2516118 0.2511620 0.2491677 
+##   caramel    banana    scotch  biscuits   custard  macaroon 
+## 0.2452080 0.2407370 0.2387094 0.2360240 0.2301865 0.2221511</code></pre>
+<pre class="r"><code>sort(dat$original[&quot;crisps&quot;,], decreasing = T)[1:20]</code></pre>
+<pre><code>##    crisps   granola   oatmeal      oats     wheat    lentil   cookies 
+## 1.0000000 0.6063545 0.6060994 0.5594922 0.4968242 0.4775136 0.4127290 
+##    barley    banana   biscuit    cereal       oat     berry   waffles 
+## 0.4090465 0.3949587 0.3932093 0.3875212 0.3741950 0.3623021 0.3564020 
+##      cake    raisin   custard     dates   bananas    potato 
+## 0.3452891 0.3357926 0.3267244 0.3256214 0.3221529 0.3206281</code></pre>
+<pre class="r"><code>sort(corshrink_mat_2[&quot;lentil&quot;,], decreasing = T)[1:20]</code></pre>
+<pre><code>##      lentil     lentils  vermicelli       beans     noodles        peas 
+##   1.0000000   0.6282002   0.4362812   0.4202289   0.4182970   0.4151525 
+##        soup     oatmeal      barley      cereal        oats        clam 
+##   0.4093720   0.3967317   0.3929695   0.3836107   0.3690337   0.3542033 
+##      noodle     lettuce cauliflower      banana   asparagus    macaroni 
+##   0.3359165   0.3292501   0.3188050   0.3087588   0.3071539   0.3006642 
+##     bananas      oyster 
+##   0.2995356   0.2929810</code></pre>
+<pre class="r"><code>sort(dat$original[&quot;lentil&quot;,], decreasing = T)[1:20]</code></pre>
+<pre><code>##     lentil    lentils    granola    oatmeal       oats vermicelli 
+##  1.0000000  0.6468821  0.5627163  0.5364558  0.4907969  0.4897411 
+##     crisps    noodles       soup       peas   macaroni      beans 
+##  0.4775136  0.4666460  0.4615776  0.4572223  0.4514855  0.4465940 
+##     barley     cereal     tomato     potato     banana     noodle 
+##  0.4412534  0.4303736  0.4293925  0.4250830  0.4233788  0.4017049 
+##       clam    bananas 
+##  0.3963113  0.3820332</code></pre>
+<pre class="r"><code>sort(corshrink_mat_2[&quot;pollock&quot;,], decreasing = T)[1:20]</code></pre>
+<pre><code>##   pollock   haddock     prawn  flounder  lobsters   herring shellfish 
+## 1.0000000 0.1907191 0.1748949 0.1736527 0.1736264 0.1723252 0.1711186 
+##    salmon   sirloin    prawns    squash  potatoes      fish       cod 
+## 0.1709107 0.1667142 0.1646343 0.1640514 0.1628287 0.1605154 0.1579752 
+##     crabs   shrimps   halibut    steaks     steak       yam 
+## 0.1559714 0.1551557 0.1548041 0.1541103 0.1536393 0.1529237</code></pre>
+<pre class="r"><code>sort(corshrink_mat_2[&quot;haddock&quot;,], decreasing = T)[1:20]</code></pre>
+<pre><code>##   haddock       cod   halibut      fish    salmon   herring  lobsters 
+## 1.0000000 0.8072189 0.7138981 0.7111818 0.6482865 0.5864298 0.4487071 
+##  flounder   chowder   catfish    prawns     crabs shellfish  scallops 
+## 0.4381676 0.4205394 0.4180896 0.4048288 0.3898614 0.3820280 0.3372526 
+##   shrimps   lobster      clam    shrimp     clams  sardines 
+## 0.3343697 0.3242320 0.3098969 0.3036952 0.2974139 0.2652800</code></pre>
+<pre class="r"><code>sort(dat$original[&quot;haddock&quot;,], decreasing = T)[1:20]</code></pre>
+<pre><code>##   haddock       cod   halibut      fish    salmon   herring  flounder 
+## 1.0000000 0.8253001 0.7457319 0.7271895 0.6719394 0.6040069 0.5136126 
+##  lobsters   catfish   chowder    prawns   pollock shellfish     crabs 
+## 0.4742231 0.4701449 0.4412588 0.4388055 0.4379065 0.4357288 0.4200240 
+##   shrimps   lobster  scallops    shrimp      clam     clams 
+## 0.3688422 0.3682678 0.3678997 0.3399687 0.3306130 0.3240716</code></pre>
+<p>We color the points based on how often at least one of the words occurs in the pair.</p>
+<pre class="r"><code>library(wordVectors)
+dir &lt;- &quot;../data/cookbooks/&quot;
+out &lt;- prep_word2vec(origin = dir, destination = &quot;../data/cookbooks_pooled.txt&quot;, lowercase = T)</code></pre>
+<pre><code>## Beginning tokenization to text file at ../data/cookbooks_pooled.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//amem.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//amwh.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//army.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//aunt.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//bart.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//beec.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//blue.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//bost.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//brkf.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//buck.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//cclu.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//chas.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//chin.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//choc.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//comm.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//conf.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//coow.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//creo.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//dcvb.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//dish.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//dome.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//econ.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//ency.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//engl.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//epia.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//epib.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//favd.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//fcsc.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//fish.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//fofb.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//fore.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//fran.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//frca.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//frch.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//gohk.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//good.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//grea.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//gtte.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//hand.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//henr.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//hosf.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//hote.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//hous.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//ital.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//jenn.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//jewi.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//lady.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//ldnw.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//linc.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//mara.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//mary.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//matf.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//miss.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//neig.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//notm.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//oldv.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//orie.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//pach.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//pcdg.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//prac.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//pres.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//prho.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//rore.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//sauc.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//scie.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//sett.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//sevf.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//swed.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//syst.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//time.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//virg.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//wash.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//whit.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//wosu.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//youn.txt</code></pre>
+<pre><code>## Prepping ../data/cookbooks//zuni.txt</code></pre>
+<pre class="r"><code>sentences&lt;-scan(&quot;../data/cookbooks_pooled.txt&quot;,&quot;character&quot;,sep=&quot;\n&quot;);
+sentences&lt;-gsub(&quot;\\.&quot;,&quot;&quot;,sentences)
+  #Split sentence
+words&lt;-strsplit(sentences,&quot; &quot;)
+  #Calculate word frequencies
+words.freq&lt;-table(unlist(words));</code></pre>
+<pre class="r"><code>indices &lt;- match(rownames(dat$original), names(words.freq))
+words.freq.foods &lt;- words.freq[indices]</code></pre>
+<pre class="r"><code>num_occurrence_matrix &lt;- sapply(words.freq.foods, function(l) pmin(l, words.freq.foods))
+nsamp_vec &lt;- num_occurrence_matrix[lower.tri(num_occurrence_matrix)]</code></pre>
+<pre class="r"><code>df3 &lt;- data.frame(&quot;true_corr&quot; = df$true_corr,
+                 &quot;corshrink&quot; = df$corshrink,
+                 &quot;nsamp&quot; = nsamp_vec)
+colfunc &lt;- colorRampPalette(c(&quot;lightcyan&quot;, &quot;darkcyan&quot;))
+plot(df3$true_corr, df3$corshrink, bg = 2, col = colfunc(2000)[df3$nsamp], pch = 19, cex = 1, xlab = &quot;cosine similarity&quot;, ylab = &quot;corshrink similarity&quot;)
+abline(0,1)</code></pre>
+<p><img src="corshrink_word2vec_cookbooks_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+
+<hr>
+<p>
+    This <a href="http://rmarkdown.rstudio.com">R Markdown</a> site was created with <a href="https://github.com/jdblischak/workflowr">workflowr</a>
+</p>
+<hr>
+
+<!-- To enable disqus, uncomment the section below and provide your disqus_shortname -->
+
+<!-- disqus
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'rmarkdown'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+-->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

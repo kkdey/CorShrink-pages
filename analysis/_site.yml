@@ -1,0 +1,17 @@
+name: CorShrink workflow
+output_dir: ../docs
+include: .nojekyll
+exclude: include
+output:
+  html_document:
+    toc: yes
+    toc_float: no
+    theme: ~
+    highlight: textmate
+    css: cosmo.css
+    include:
+      before_body: include/header.html
+      after_body: include/footer.html
+    lib_dir: site_libs
+    self_contained: no
+

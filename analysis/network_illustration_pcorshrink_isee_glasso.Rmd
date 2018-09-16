@@ -1,0 +1,128 @@
+---
+title: "Network analysis using pCorShrink, ISEE and GLASSO"
+author: "Kushal K Dey"
+date: "June 29, 2018"
+output: html_document
+---
+
+```{r opts, echo=FALSE}
+knitr::opts_chunk$set(fig.path = "network_illustration_pcorshrink_isee_glasso/")
+```
+
+```{r warning=FALSE, message = FALSE}
+library(glasso)
+library(corpcor)
+library(CorShrink)
+library(network)
+source("isee_all.R")
+library(scales)
+library(statnet)
+```
+
+In this script, we consider a simple network, and conisder the data from this network structure and try to estimate from the data, the underlying network using three approaches to graph inference - ISEE, pCorShrink and GLASSO.  This example has been taken from this [lecture note](https://www4.stat.ncsu.edu/~reich/BigData/code/glasso.html).
+
+```{r}
+ n <- 100
+ p <- 10
+
+ # Construct a sparse precision matrix
+
+ trueP <- diag(p)
+ for(j in 5:p){
+  trueP[j,j-1] <- -.4
+  trueP[j-1,j] <- -.4
+ }
+ trueS <- solve(trueP) ## sample covariance matrix 
+ trueA <- ifelse(trueP!=0 & row(trueP)!=col(trueP),1,0) ## graph structure
+
+ trueP
+
+```
+
+
+```{r}
+ library(network)
+ g <- network(trueA)
+ plot(g,label=1:p,main="True network")
+
+```
+## Generate Data
+
+```{r}
+x <- matrix(rnorm(n*p),n,p)%*%chol(trueS)
+S <- cov(x)
+round(S,2)
+```
+
+```{r}
+nr  <- 100
+ rho <- seq(0.1,1,length=nr)
+ bic <- rho
+ for(j in 1:nr){
+  a       <- glasso(S,rho[j])
+  p_off_d <- sum(a$wi!=0 & col(S)<row(S))
+  bic[j]  <- -2*(a$loglik) + p_off_d*log(n)
+ }
+
+ best <- which.min(bic)
+ plot(rho,bic)
+ points(rho[best],bic[best],pch=19)
+```
+
+## glasso network
+
+```{r}
+a <- glasso(S,rho[best])
+names(a)
+P <- a$wi
+A <- ifelse(P!=0 & row(P)!=col(P),1,0)
+
+ g <- network(A)
+ plot(g,label=1:p,main="Estimated network")
+```
+
+## ISEE
+
+```{r}
+regfactor = "log"  # or "one", "sqrt"
+npermu = 1         # or >= 2
+sis.use = 0        # or 1, whether to use SIS for screening
+bia.cor = 0        # or 1, whether to apply bias correction for ISEE
+obj.n = isee(x, regfactor, npermu, sis.use, bia.cor = 0) 
+pcor2 <- -cov2cor(obj.n$Omega.isee)
+diag(pcor2) <- 1
+
+A <- ifelse(pcor2!=0 & row(pcor2)!=col(pcor2),1,0)
+
+g <- network(A)
+plot(g,label=1:p,main="Estimated network by ISEE")
+ 
+```
+
+## pCorShrink
+
+```{r}
+pcor4 <- pCorShrinkData(x, reg_type = "lm",
+                        maxiter = 1000,
+                        ash.control = list(mixcompdist = "halfuniform"))
+A <- ifelse(pcor4 > 0.1 & row(pcor4)!=col(pcor4),1,0)
+
+g <- network(A)
+plot(g,label=1:p,main="Estimated network by pCorShrink+LM")
+
+```
+
+## IGraph plot for pCorShrink
+
+```{r}
+g = network(5*pcor4, matrix.type = "adjacency", directed = FALSE,
+               names.eval="weight", ignore.eval=FALSE)
+#get.edge.value(g, "weight")
+#plot(g,label=1:p,main="Estimated network by pCorShrink+LM")
+col2 <- c("blue", "white", "red")
+gplot(g,gmode="graph",label = 1:p, edge.lwd=g%e%'weight', 
+      edge.col = colorRampPalette(col2)(200)[rescale(g%e%'weight', 
+                                          to = c(1, 200), from = c(-5,5))],
+      vertex.col="black")
+```
+

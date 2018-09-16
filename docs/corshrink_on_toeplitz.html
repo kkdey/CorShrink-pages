@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Kushal K Dey" />
+
+
+<title>CorShrink on Toeplitz matrices</title>
+
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+<link rel="stylesheet" href="cosmo.css" type="text/css" />
+
+</head>
+
+<body>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:100,300,400,600" rel="stylesheet" type="text/css">
+    <link href="../docs/cosmo.css" rel="stylesheet">
+    <link href="../docs/cosmo.min.css" rel="stylesheet">
+</head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="../docs/bootstrap/js/bootstrap.min.js"></script>
+
+<body>
+
+<div class = "nav" align = "middle">
+<div class= "p1"></div>
+<p>
+  <a class="btn btn-large btn btn-primary" type="button" href = "index.html">CorShrink</a>
+  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow.html">HOME</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "workflow_project.html">WORKFLOW</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "about.html">METHODS</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink">SOFTWARE</a>
+  &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "license.html">LICENSE</a>
+   &nbsp &nbsp
+  <a class="btn btn-large btn btn-primary" type="button" href = "https://github.com/kkdey/CorShrink-pages">GITHUB</a>
+ </p>
+</div>
+<!-- <div class="nav">
+  <a href="index.html">Home page</a> &nbsp &nbsp
+  <a href="musings.html">Musings</a> &nbsp &nbsp
+  <a href="town.html">My town</a> &nbsp &nbsp
+  <a href="links.html">Links</a>
+</div> -->
+
+<!-- Main content -->
+</body>
+</html>
+
+
+<h1 class="title toc-ignore">CorShrink on Toeplitz matrices</h1>
+<h4 class="author"><em>Kushal K Dey</em></h4>
+<h4 class="date"><em>1/1/2018</em></h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#n-10-p200">n = 10, P=200</a></li>
+<li><a href="#n-50-p200">n = 50, P=200</a></li>
+<li><a href="#n-100-p200">n = 100, P=200</a></li>
+<li><a href="#n-200-p200">n = 200, P=200</a></li>
+</ul>
+</div>
+
+<pre class="r"><code>DM_toeplitz = function(n,P){
+  library(&quot;MASS&quot;)
+  index1=sort(sample(seq(1:n),(n/2)))
+  index2=seq(1:n)[-index1]
+  Sigmatp=function(P){
+    a=array(0,dim=c(P,P))
+    for(i in 1:P){
+      for(j in 1:P){
+        a[i,j]=max(1-0.1*(abs(i-j)),0)
+      }
+    }
+    return(a)
+  }
+  Sigma = Sigmatp(P)
+  data = mvrnorm(n,rep(0,P),Sigma)
+  Xtest = data[index2,]
+  Xtrain = data[index1,]
+  Omega = solve(Sigma)
+  return(list(Xtrain = Xtrain, Xtest = Xtest, Sigma = Sigma))
+}</code></pre>
+<div id="n-10-p200" class="section level2">
+<h2>n = 10, P=200</h2>
+<pre class="r"><code>n &lt;- 10
+P &lt;- 200
+ll &lt;- DM_toeplitz(n=n, P=P)
+data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+
+image(as.matrix(cov2cor(Sigma)),
+      col=col, main=paste0(&quot;pop corr matrix&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_on_toeplitz_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<pre class="r"><code>## GLASSO
+
+out.npn = huge(data, lambda = seq(0.98, 0.01, length.out = 100), method = &quot;glasso&quot;, cov.output = TRUE)</code></pre>
+<pre><code>## Conducting the graphical lasso (glasso) with lossless screening....in progress:0% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:1% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:2% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:3% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:4% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:5% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:6% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:6% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:7% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:8% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:9% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:10% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:12% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:13% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:14% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:15% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:16% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:17% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:18% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:18% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:19% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:20% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:21% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:23% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:24% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:25% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:26% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:27% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:28% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:29% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:30% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:31% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:31% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:32% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:34% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:35% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:36% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:37% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:38% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:39% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:40% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:41% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:42% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:43% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:43% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:44% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:46% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:47% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:48% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:49% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:50% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:51% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:52% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:53% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:54% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:55% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:56% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:57% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:58% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:59% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:60% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:61% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:62% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:63% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:64% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:65% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:65% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:67% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:68% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:69% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:70% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:71% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:72% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:73% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:74% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:75% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:76% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:77% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:78% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:79% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:80% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:81% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:82% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:83% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:84% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:85% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:86% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:87% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:88% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:89% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:90% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:91% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:92% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:93% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:94% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:95% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:96% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:97% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:98% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:99% 
+Conducting the graphical lasso (glasso)....done.                                          </code></pre>
+<pre class="r"><code>which.max(out.npn$loglik)</code></pre>
+<pre><code>## [1] 100</code></pre>
+<pre class="r"><code>est_icov &lt;- out.npn$icov[[which.max(out.npn$loglik)]]
+est_cov &lt;- out.npn$cov[[which.max(out.npn$loglik)]]
+
+## Shafer Strimmer 
+
+strimmer_sample &lt;- corpcor::cor.shrink(data)</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.7917</code></pre>
+<pre class="r"><code>## CorShrink
+
+cov_sample_ML &lt;-  CorShrinkData(data, sd_boot = FALSE, optmethod = &quot;mixEM&quot;,
+                     image.control = list(x.cex = 0.3, y.cex = 0.3),
+                     ash.control = list())</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<p>All methods - covariance matrix</p>
+<pre class="r"><code>col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+
+par(mfrow = c(2,2))
+
+image(as.matrix(cor(out.npn$data)),
+      col=col, main=paste0(&quot;sample corr matrix&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(cov2cor(as.matrix(est_cov)),
+      col=col, main=paste0(&quot;GLASSO&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(strimmer_sample,
+      col=col, main=paste0(&quot;shafer strimmer&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(as.matrix(cov_sample_ML$ash_cor_PD),
+      col=col, main=paste0(&quot;CorShrink&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_on_toeplitz_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+</div>
+<div id="n-50-p200" class="section level2">
+<h2>n = 50, P=200</h2>
+<pre class="r"><code>n &lt;- 50
+P &lt;- 200
+ll &lt;- DM_toeplitz(n=n, P=P)
+data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+
+image(as.matrix(cov2cor(Sigma)),
+      col=col, main=paste0(&quot;pop corr matrix&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_on_toeplitz_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<pre class="r"><code>## GLASSO
+
+out.npn = huge(data, nlambda=100, method = &quot;glasso&quot;, cov.output = TRUE)</code></pre>
+<pre><code>## Conducting the graphical lasso (glasso) with lossless screening....in progress:0% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:1% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:2% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:3% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:4% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:5% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:6% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:6% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:7% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:8% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:9% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:10% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:12% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:13% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:14% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:15% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:16% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:17% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:18% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:18% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:19% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:20% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:21% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:23% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:24% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:25% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:26% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:27% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:28% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:29% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:30% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:31% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:31% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:32% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:34% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:35% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:36% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:37% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:38% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:39% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:40% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:41% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:42% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:43% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:43% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:44% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:46% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:47% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:48% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:49% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:50% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:51% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:52% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:53% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:54% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:55% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:56% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:57% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:58% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:59% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:60% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:61% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:62% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:63% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:64% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:65% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:65% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:67% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:68% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:69% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:70% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:71% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:72% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:73% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:74% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:75% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:76% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:77% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:78% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:79% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:80% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:81% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:82% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:83% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:84% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:85% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:86% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:87% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:88% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:89% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:90% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:91% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:92% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:93% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:94% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:95% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:96% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:97% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:98% 
+Conducting the graphical lasso (glasso)....done.                                          </code></pre>
+<pre class="r"><code>which.max(out.npn$loglik)</code></pre>
+<pre><code>## [1] 100</code></pre>
+<pre class="r"><code>est_icov &lt;- out.npn$icov[[which.max(out.npn$loglik)]]
+est_cov &lt;- out.npn$cov[[which.max(out.npn$loglik)]]
+
+## Shafer Strimmer 
+
+strimmer_sample &lt;- corpcor::cor.shrink(data)</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.4373</code></pre>
+<pre class="r"><code>## CorShrink
+
+cov_sample_ML &lt;-  CorShrinkData(data, sd_boot = FALSE, optmethod = &quot;mixEM&quot;,
+                     image.control = list(x.cex = 0.3, y.cex = 0.3),
+                     ash.control = list())</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre class="r"><code>col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+
+par(mfrow = c(2,2))
+
+image(as.matrix(cor(out.npn$data)),
+      col=col, main=paste0(&quot;sample corr matrix&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(cov2cor(as.matrix(est_cov)),
+      col=col, main=paste0(&quot;GLASSO&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(strimmer_sample,
+      col=col, main=paste0(&quot;shafer strimmer&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(as.matrix(cov_sample_ML$ash_cor_PD),
+      col=col, main=paste0(&quot;CorShrink&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_on_toeplitz_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+</div>
+<div id="n-100-p200" class="section level2">
+<h2>n = 100, P=200</h2>
+<pre class="r"><code>n &lt;- 100
+P &lt;- 200
+ll &lt;- DM_toeplitz(n=n, P=P)
+data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+
+image(as.matrix(cov2cor(Sigma)),
+      col=col, main=paste0(&quot;pop corr matrix&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_on_toeplitz_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<pre class="r"><code>## GLASSO
+
+out.npn = huge(data, nlambda=100, method = &quot;glasso&quot;, cov.output = TRUE)</code></pre>
+<pre><code>## Conducting the graphical lasso (glasso) with lossless screening....in progress:0% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:1% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:2% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:3% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:4% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:5% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:6% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:6% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:7% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:8% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:9% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:10% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:12% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:13% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:14% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:15% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:16% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:17% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:18% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:18% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:19% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:20% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:21% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:23% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:24% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:25% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:26% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:27% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:28% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:29% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:30% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:31% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:31% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:32% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:34% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:35% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:36% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:37% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:38% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:39% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:40% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:41% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:42% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:43% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:43% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:44% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:46% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:47% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:48% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:49% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:50% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:51% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:52% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:53% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:54% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:55% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:56% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:57% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:58% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:59% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:60% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:61% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:62% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:63% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:64% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:65% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:65% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:67% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:68% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:69% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:70% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:71% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:72% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:73% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:74% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:75% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:76% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:77% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:78% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:79% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:80% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:81% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:82% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:83% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:84% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:85% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:86% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:87% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:88% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:89% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:90% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:91% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:92% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:93% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:94% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:95% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:96% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:97% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:98% 
+Conducting the graphical lasso (glasso)....done.                                          </code></pre>
+<pre class="r"><code>which.max(out.npn$loglik)</code></pre>
+<pre><code>## [1] 100</code></pre>
+<pre class="r"><code>est_icov &lt;- out.npn$icov[[which.max(out.npn$loglik)]]
+est_cov &lt;- out.npn$cov[[which.max(out.npn$loglik)]]
+
+## Shafer Strimmer 
+
+strimmer_sample &lt;- corpcor::cor.shrink(data)</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.2808</code></pre>
+<pre class="r"><code>## CorShrink
+
+cov_sample_ML &lt;-  CorShrinkData(data, sd_boot = FALSE, optmethod = &quot;mixEM&quot;,
+                     image.control = list(x.cex = 0.3, y.cex = 0.3),
+                     ash.control = list())</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre class="r"><code>col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+
+par(mfrow = c(2,2))
+
+image(as.matrix(cor(out.npn$data)),
+      col=col, main=paste0(&quot;sample corr matrix&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(cov2cor(as.matrix(est_cov)),
+      col=col, main=paste0(&quot;GLASSO&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(strimmer_sample,
+      col=col, main=paste0(&quot;shafer strimmer&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(as.matrix(cov_sample_ML$ash_cor_PD),
+      col=col, main=paste0(&quot;CorShrink&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_on_toeplitz_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+</div>
+<div id="n-200-p200" class="section level2">
+<h2>n = 200, P=200</h2>
+<pre class="r"><code>n &lt;- 200
+P &lt;- 200
+ll &lt;- DM_toeplitz(n=n, P=P)
+data &lt;- rbind(ll$Xtrain, ll$Xtest)
+Sigma &lt;- ll$Sigma
+corSigma &lt;- cov2cor(Sigma)</code></pre>
+<pre class="r"><code>col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+
+image(as.matrix(cov2cor(Sigma)),
+      col=col, main=paste0(&quot;pop corr matrix&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_on_toeplitz_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
+<pre class="r"><code>## GLASSO
+
+out.npn = huge(data, nlambda=100, method = &quot;glasso&quot;, cov.output = TRUE)</code></pre>
+<pre><code>## Conducting the graphical lasso (glasso) with lossless screening....in progress:0% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:1% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:2% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:3% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:4% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:5% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:6% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:6% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:7% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:8% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:9% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:10% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:12% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:13% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:14% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:15% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:16% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:17% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:18% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:18% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:19% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:20% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:21% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:23% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:24% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:25% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:26% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:27% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:28% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:29% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:30% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:31% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:31% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:32% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:34% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:35% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:36% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:37% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:38% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:39% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:40% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:41% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:42% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:43% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:43% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:44% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:46% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:47% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:48% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:49% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:50% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:51% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:52% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:53% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:54% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:55% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:56% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:57% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:58% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:59% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:60% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:61% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:62% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:63% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:64% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:65% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:65% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:67% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:68% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:69% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:70% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:71% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:72% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:73% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:74% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:75% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:76% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:77% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:78% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:79% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:80% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:81% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:82% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:83% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:84% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:85% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:86% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:87% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:88% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:89% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:90% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:91% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:92% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:93% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:94% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:95% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:96% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:97% 
+Conducting the graphical lasso (glasso) with lossless screening....in progress:98% 
+Conducting the graphical lasso (glasso)....done.                                          </code></pre>
+<pre class="r"><code>which.max(out.npn$loglik)</code></pre>
+<pre><code>## [1] 100</code></pre>
+<pre class="r"><code>est_icov &lt;- out.npn$icov[[which.max(out.npn$loglik)]]
+est_cov &lt;- out.npn$cov[[which.max(out.npn$loglik)]]
+
+## Shafer Strimmer 
+
+strimmer_sample &lt;- corpcor::cor.shrink(data)</code></pre>
+<pre><code>## Estimating optimal shrinkage intensity lambda (correlation matrix): 0.1575</code></pre>
+<pre class="r"><code>## CorShrink
+
+cov_sample_ML &lt;-  CorShrinkData(data, sd_boot = FALSE, optmethod = &quot;mixEM&quot;,
+                     image.control = list(x.cex = 0.3, y.cex = 0.3),
+                     ash.control = list())</code></pre>
+<pre><code>## ash cor only and ash cor PD matrices are different</code></pre>
+<pre class="r"><code>col=c(rep(rgb(0,1,0), 10000),rev(rgb(seq(1,0,length=1000),1,seq(1,0,length=1000))),
+      rgb(1,seq(1,0,length=1000),seq(1,0,length=1000)), rep(rgb(1,0,0),10000))
+
+par(mfrow = c(2,2))
+
+image(as.matrix(cor(out.npn$data)),
+      col=col, main=paste0(&quot;sample corr matrix&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(cov2cor(as.matrix(est_cov)),
+      col=col, main=paste0(&quot;GLASSO&quot;), cex.main=1,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(strimmer_sample,
+      col=col, main=paste0(&quot;shafer strimmer&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))
+
+image(as.matrix(cov_sample_ML$ash_cor_PD),
+      col=col, main=paste0(&quot;CorShrink&quot;), cex.main=2,
+      xaxt = &quot;n&quot;, yaxt = &quot;n&quot;, zlim=c(-1,1))</code></pre>
+<p><img src="corshrink_on_toeplitz_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
+</div>
+
+<hr>
+<p>
+    This <a href="http://rmarkdown.rstudio.com">R Markdown</a> site was created with <a href="https://github.com/jdblischak/workflowr">workflowr</a>
+</p>
+<hr>
+
+<!-- To enable disqus, uncomment the section below and provide your disqus_shortname -->
+
+<!-- disqus
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'rmarkdown'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+-->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

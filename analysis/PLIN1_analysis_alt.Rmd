@@ -1,0 +1,125 @@
+---
+title: "GTEx - PLIN1 - different ash versions"
+author: "Kushal K Dey"
+date: "3/30/2018"
+output: html_document
+---
+
+We perform adaptive correlation shrinkage analysis using the **CorShrink** R package on the 
+subject by tissue expression data for the PLIN1 gene.
+
+```{r}
+library(CorShrink)
+library(corrplot)
+library(ggplot2)
+library(gridExtra)
+library(ashr)
+```
+
+```{r}
+data("sample_by_feature_data")
+```
+
+This data contains many NA values.We now run **CorShrink** on this data.
+
+```{r warning = FALSE, message=FALSE, fig.align = "left", fig.show="asis", dpi=144, fig.width=13, fig.height=10}
+out <- CorShrinkData(sample_by_feature_data, 
+                    ash.control = list(mixcompdist = "normal", 
+                                    control = list(maxiter = 1000)),            
+                    report_model = TRUE)
+```
+
+```{r warning = FALSE, message=FALSE, fig.align = "left", fig.show="asis", dpi=144, fig.width=13, fig.height=10}
+order_index <- get(load("../shared_output/order_index.rda"))
+data("pairwise_corr_matrix")
+col2 <- c("blue", "white", "red")
+corrplot(pairwise_corr_matrix[order_index, order_index], diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = "td", tl.cex = 0.9, tl.col = "black",
+         rect.col = "white",na.label.col = "white",
+         method = "color", type = "upper") 
+```
+
+
+```{r warning = FALSE, message=FALSE, fig.align = "left", fig.show="asis", dpi=144, fig.width=13, fig.height=10}
+order_index <- get(load("../shared_output/order_index.rda"))
+corrplot(out$cor[order_index, order_index], diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = "td", tl.cex = 0.9, tl.col = "black",
+         rect.col = "white",na.label.col = "white",
+         method = "color", type = "upper") 
+```
+
+We look at the performance of non-parametric CorShrink 
+
+```{r warning = FALSE, message=FALSE, fig.align = "left", fig.show="asis", dpi=144, fig.width=13, fig.height=10}
+# cor_features <- cor(sample_by_feature_data, use= "pairwise.complete.obs")
+# cor_vec <- cor_features[lower.tri(cor_features)]
+# zscores <- 0.5*log((1+cor_vec)/(1-cor_vec))
+# zscores[zscores == Inf] = 0
+# zscores[zscores == -Inf] = 0
+# data("common_samples")
+# sd_zscores <- median(sqrt(1/(common_samples[lower.tri(common_samples)])), na.rm=TRUE)
+# 
+# range <- 5*max(sqrt(zscores^2+sd_zscores^2), na.rm=TRUE)
+
+range <- seq(-5, 5, length.out = 51)
+lower <- range[1:(length(range)-1)]
+upper <- range[2:length(range)]
+
+g.init= unimix(pi=rep(1,50)/50, a=lower, b=upper)
+
+out <- CorShrinkData(sample_by_feature_data, sd_boot = FALSE, image = "null", 
+              ash.control = list(g = g.init, mode = NULL, 
+                                 control = list(maxiter = 1000)),
+              report_model = TRUE)
+corrplot(out$cor[order_index, order_index], diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = "td", tl.cex = 0.9, tl.col = "black",
+         rect.col = "white",na.label.col = "white",
+         method = "color", type = "upper") 
+```
+
+```{r warning = FALSE, message=FALSE, fig.align = "left", fig.show="asis", dpi=144, fig.width=13, fig.height=10}
+range <- seq(-5, 5, length.out = 11)
+lower <- range[1:(length(range)-1)]
+upper <- range[2:length(range)]
+
+g.init= unimix(pi=rep(1,10)/10, a=lower, b=upper)
+
+out <- CorShrinkData(sample_by_feature_data, sd_boot = FALSE, image = "null", 
+              ash.control = list(g = g.init, mode = NULL, 
+                                 control = list(maxiter = 1000)),
+              report_model = TRUE)
+corrplot(out$cor[order_index, order_index], diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = "td", tl.cex = 0.9, tl.col = "black",
+         rect.col = "white",na.label.col = "white",
+         method = "color", type = "upper")
+```
+
+```{r warning = FALSE, message=FALSE, fig.align = "left", fig.show="asis", dpi=144, fig.width=13, fig.height=10}
+out <- CorShrinkData(sample_by_feature_data, 
+                    ash.control = list(mixcompdist = "normal",
+                                       mode = "estimate",
+                                       control = list(maxiter = 1000)),            
+                    report_model = TRUE)
+corrplot(out$cor[order_index, order_index], diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = "td", tl.cex = 0.9, tl.col = "black",
+         rect.col = "white",na.label.col = "white",
+         method = "color", type = "upper")
+```
+
+
+
+```{r warning = FALSE, message=FALSE, fig.align = "left", fig.show="asis", dpi=144, fig.width=13, fig.height=10}
+out <- CorShrinkData(sample_by_feature_data, 
+                    ash.control = list(mixcompdist = "+uniform"),            
+                    report_model = TRUE)
+corrplot(out$cor[order_index, order_index], diag = FALSE,
+         col = colorRampPalette(col2)(200),
+         tl.pos = "td", tl.cex = 0.9, tl.col = "black",
+         rect.col = "white",na.label.col = "white",
+         method = "color", type = "upper")
+```

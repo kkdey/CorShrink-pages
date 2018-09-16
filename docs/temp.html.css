@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CorShrink with D3</title>
+
+<style>
+.navbar-brand {
+  padding: 0px; /* firefox bug fix */
+}
+
+.navbar-brand>img {
+  height: 100%;
+  padding: 15px; /* firefox bug fix */
+  width: auto;
+}
+
+.navbar-brand {
+  background: url(http://disputebills.com/site/uploads/2015/10/dispute.png) center / contain no-repeat;
+  width: 200px;
+}
+
+</style>
+
+<body></body>
+</html>

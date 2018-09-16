@@ -1,0 +1,92 @@
+---
+title: 'Stock data example : pCorShrink and ISEE'
+author: "Kushal K Dey"
+date: "June 29, 2018"
+output: html_document
+---
+
+In this script, we consider the stock price data for a number of time points as in the **huge** R package. 
+
+```{r opts, echo=FALSE}
+knitr::opts_chunk$set(fig.path = "stockdata_example_pcorshrink/")
+```
+
+
+```{r warning=FALSE, message = FALSE}
+library(glasso)
+library(corpcor)
+library(CorShrink)
+library(network)
+source("isee_all.R")
+library(scales)
+library(statnet)
+library(huge)
+library(corrplot)
+```
+
+```{r}
+data(stockdata) # Load the data
+x = log(stockdata$data[2:1258,]/stockdata$data[1:1257,])  # Preprocessing
+x.npn = huge.npn(x, npn.func="truncation")                # Nonparanormal
+out.npn = huge(x.npn,method = "glasso", nlambda=40,lambda.min.ratio = 0.4)
+```
+
+```{r}
+dim(out.npn$icov[[1]])
+```
+
+```{r echo=TRUE, eval=FALSE}
+pcor4 <- pCorShrinkData(x,reg_type = "lm",
+                        maxiter = 1000,
+                        ash.control = list(mixcompdist = "halfuniform"))
+save(pcor4, file = "stockdata_pcorshrink_lm.rda")
+```
+
+```{r}
+pcor4 <- get(load("stockdata_pcorshrink_lm.rda"))
+col2 <- c("blue", "white", "red")
+tmp = apply(pcor4, 2, function(x) sort(x, decreasing = TRUE)[2])
+idx <- which(tmp > 0.25)
+pcor5 <- pcor4[idx, idx]
+corrplot(pcor5, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.05, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+
+A <- ifelse(pcor5 > 0.1 & row(pcor5)!=col(pcor5),1,0)
+
+g <- network(A)
+plot(g,label=1:dim(pcor5)[1],
+     main="Estimated network by pCorShrink+LM")
+
+```
+
+## ISEE
+
+```{r echo=TRUE, eval=FALSE}
+regfactor = "log"  # or "one", "sqrt"
+npermu = 1         # or >= 2
+sis.use = 0        # or 1, whether to use SIS for screening
+bia.cor = 0        # or 1, whether to apply bias correction for ISEE
+obj.n = isee(x, regfactor, npermu, sis.use, bia.cor = 0) 
+pcor2 <- -cov2cor(obj.n$Omega.isee)
+diag(pcor2) <- 1
+save(pcor2, file = "stockdata_isee.rda")
+```
+
+```{r}
+pcor2 <- get(load("stockdata_isee.rda"))
+col2 <- c("blue", "white", "red")
+tmp = apply(pcor2, 2, function(x) sort(x, decreasing = TRUE)[2])
+idx <- which(tmp > 0.25)
+pcor3 <- pcor2[idx, idx]
+corrplot(pcor3, diag = FALSE, col = colorRampPalette(col2)(200), tl.pos = "td", 
+         tl.col = "black", tl.cex = 0.05, rect.col = "white", 
+         na.label.col = "white", method = "color", type = "upper")
+
+A <- ifelse(pcor3 > 0.1 & row(pcor3)!=col(pcor3),1,0)
+
+g <- network(A)
+plot(g,label=1:dim(pcor5)[1],
+     main="Estimated network by ISEE")
+
+```
