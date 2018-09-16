@@ -81,9 +81,19 @@ if (window.hljs) {
 <h4 class="date"><em>9/15/2018</em></h4>
 
 
+<div id="TOC">
+<ul>
+<li><a href="#simulation-experiment">Simulation Experiment</a></li>
+<li><a href="#flash">FLASH</a></li>
+<li><a href="#corshrink">CorShrink</a></li>
+</ul>
+</div>
 
 <pre class="r"><code>library(corrplot)</code></pre>
 <pre><code>## corrplot 0.84 loaded</code></pre>
+<pre class="r"><code>library(flashr)</code></pre>
+<div id="simulation-experiment" class="section level2">
+<h2>Simulation Experiment</h2>
 <pre class="r"><code>n &lt;- 100
 p &lt;- 25
 noise &lt;- matrix(rnorm(n*p), nrow=n, ncol=p)
@@ -91,12 +101,12 @@ Sigma &lt;- matrix(0.04 * 0.8, nrow=p, ncol=p)
 diag(Sigma) &lt;- 0.04 
 data &lt;- cbind(noise, MASS::mvrnorm(n = n, mu = rep(0.5, p), Sigma = Sigma))</code></pre>
 <pre class="r"><code>data_with_na &lt;- apply(data, 2, function(x) { x[sample(1:100, 75)]=NA; return(x)})</code></pre>
-<pre class="r"><code>library(flashr)</code></pre>
+</div>
+<div id="flash" class="section level2">
+<h2>FLASH</h2>
 <pre class="r"><code>fl = flash(data_with_na)</code></pre>
 <pre><code>## fitting factor/loading 1</code></pre>
 <pre><code>## fitting factor/loading 2</code></pre>
-<pre class="r"><code>ldf = flash_get_ldf(fl)</code></pre>
-<pre class="r"><code>data_new &lt;- flash_fill(data_with_na, fl)</code></pre>
 <pre class="r"><code>cor_mat &lt;- cor(flash_fill(data_with_na, fl), use = &quot;pairwise.complete.obs&quot;)
 col2 &lt;- c(&quot;blue&quot;, &quot;white&quot;, &quot;red&quot;)
 corrplot(cor_mat, diag = FALSE,
@@ -104,7 +114,7 @@ corrplot(cor_mat, diag = FALSE,
          tl.pos = &quot;td&quot;, tl.cex = 0.9, tl.col = &quot;black&quot;,
          rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,
          method = &quot;color&quot;, type = &quot;upper&quot;) </code></pre>
-<p><img src="flash_corshrink_missing_data_sim_files/figure-html/unnamed-chunk-7-1.png" width="1152" /></p>
+<p><img src="flash_corshrink_missing_data_sim_files/figure-html/unnamed-chunk-5-1.png" width="768" /></p>
 <pre class="r"><code>cor_mat &lt;- cor(data, use = &quot;pairwise.complete.obs&quot;)
 col2 &lt;- c(&quot;blue&quot;, &quot;white&quot;, &quot;red&quot;)
 corrplot(cor_mat, diag = FALSE,
@@ -112,7 +122,10 @@ corrplot(cor_mat, diag = FALSE,
          tl.pos = &quot;td&quot;, tl.cex = 0.9, tl.col = &quot;black&quot;,
          rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,
          method = &quot;color&quot;, type = &quot;upper&quot;) </code></pre>
-<p><img src="flash_corshrink_missing_data_sim_files/figure-html/unnamed-chunk-8-1.png" width="1152" /></p>
+<p><img src="flash_corshrink_missing_data_sim_files/figure-html/unnamed-chunk-6-1.png" width="768" /></p>
+</div>
+<div id="corshrink" class="section level2">
+<h2>CorShrink</h2>
 <pre class="r"><code>out &lt;- CorShrink::CorShrinkData(data_with_na, ash.control = list(mixcompdist = &quot;normal&quot;))</code></pre>
 <pre class="r"><code>col2 &lt;- c(&quot;blue&quot;, &quot;white&quot;, &quot;red&quot;)
 corrplot(out$cor, diag = FALSE,
@@ -120,7 +133,8 @@ corrplot(out$cor, diag = FALSE,
          tl.pos = &quot;td&quot;, tl.cex = 0.9, tl.col = &quot;black&quot;,
          rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,
          method = &quot;color&quot;, type = &quot;upper&quot;) </code></pre>
-<p><img src="flash_corshrink_missing_data_sim_files/figure-html/unnamed-chunk-10-1.png" width="1152" /></p>
+<p><img src="flash_corshrink_missing_data_sim_files/figure-html/unnamed-chunk-8-1.png" width="768" /></p>
+</div>
 
 <hr>
 <p>

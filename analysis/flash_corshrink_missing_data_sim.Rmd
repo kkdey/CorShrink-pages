@@ -7,8 +7,10 @@ output: html_document
 
 ```{r}
 library(corrplot)
+library(flashr)
 ```
 
+## Simulation Experiment
 
 ```{r}
 n <- 100
@@ -23,20 +25,13 @@ data <- cbind(noise, MASS::mvrnorm(n = n, mu = rep(0.5, p), Sigma = Sigma))
 data_with_na <- apply(data, 2, function(x) { x[sample(1:100, 75)]=NA; return(x)})
 ```
 
-```{r}
-library(flashr)
-```
+## FLASH
 
 ```{r}
 fl = flash(data_with_na)
-ldf = flash_get_ldf(fl)
 ```
 
-```{r}
-data_new <- flash_fill(data_with_na, fl)
-```
-
-```{r fig.height=12, fig.width=12}
+```{r fig.height=8, fig.width=8}
 cor_mat <- cor(flash_fill(data_with_na, fl), use = "pairwise.complete.obs")
 col2 <- c("blue", "white", "red")
 corrplot(cor_mat, diag = FALSE,
@@ -46,7 +41,7 @@ corrplot(cor_mat, diag = FALSE,
          method = "color", type = "upper") 
 ```
 
-```{r fig.height=12, fig.width=12}
+```{r fig.height=8, fig.width=8}
 cor_mat <- cor(data, use = "pairwise.complete.obs")
 col2 <- c("blue", "white", "red")
 corrplot(cor_mat, diag = FALSE,
@@ -55,11 +50,14 @@ corrplot(cor_mat, diag = FALSE,
          rect.col = "white",na.label.col = "white",
          method = "color", type = "upper") 
 ```
+
+## CorShrink
+
 ```{r}
 out <- CorShrink::CorShrinkData(data_with_na, ash.control = list(mixcompdist = "normal"))
 ```
 
-```{r fig.height=12, fig.width=12}
+```{r fig.height=8, fig.width=8}
 col2 <- c("blue", "white", "red")
 corrplot(out$cor, diag = FALSE,
          col = colorRampPalette(col2)(200),
