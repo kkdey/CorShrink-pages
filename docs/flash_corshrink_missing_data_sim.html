@@ -115,7 +115,7 @@ corrplot(cor_mat, diag = FALSE,
          rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,
          method = &quot;color&quot;, type = &quot;upper&quot;) </code></pre>
 <p><img src="flash_corshrink_missing_data_sim_files/figure-html/unnamed-chunk-5-1.png" width="768" /></p>
-<pre class="r"><code>cor_mat &lt;- cor(data, use = &quot;pairwise.complete.obs&quot;)
+<pre class="r"><code>cor_mat &lt;- cor(data_with_na, use = &quot;pairwise.complete.obs&quot;)
 col2 &lt;- c(&quot;blue&quot;, &quot;white&quot;, &quot;red&quot;)
 corrplot(cor_mat, diag = FALSE,
          col = colorRampPalette(col2)(200),
@@ -128,7 +128,7 @@ corrplot(cor_mat, diag = FALSE,
 <h2>CorShrink</h2>
 <pre class="r"><code>out &lt;- CorShrink::CorShrinkData(data_with_na, ash.control = list(mixcompdist = &quot;normal&quot;))</code></pre>
 <pre class="r"><code>col2 &lt;- c(&quot;blue&quot;, &quot;white&quot;, &quot;red&quot;)
-corrplot(out$cor, diag = FALSE,
+corrplot(as.matrix(out$cor), diag = FALSE,
          col = colorRampPalette(col2)(200),
          tl.pos = &quot;td&quot;, tl.cex = 0.9, tl.col = &quot;black&quot;,
          rect.col = &quot;white&quot;,na.label.col = &quot;white&quot;,

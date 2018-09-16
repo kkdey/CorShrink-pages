@@ -42,7 +42,7 @@ corrplot(cor_mat, diag = FALSE,
 ```
 
 ```{r fig.height=8, fig.width=8}
-cor_mat <- cor(data, use = "pairwise.complete.obs")
+cor_mat <- cor(data_with_na, use = "pairwise.complete.obs")
 col2 <- c("blue", "white", "red")
 corrplot(cor_mat, diag = FALSE,
          col = colorRampPalette(col2)(200),
@@ -59,7 +59,7 @@ out <- CorShrink::CorShrinkData(data_with_na, ash.control = list(mixcompdist = "
 
 ```{r fig.height=8, fig.width=8}
 col2 <- c("blue", "white", "red")
-corrplot(out$cor, diag = FALSE,
+corrplot(as.matrix(out$cor), diag = FALSE,
          col = colorRampPalette(col2)(200),
          tl.pos = "td", tl.cex = 0.9, tl.col = "black",
          rect.col = "white",na.label.col = "white",
